@@ -254,17 +254,14 @@ integer *lwrk, *iwrk, *ier;
 	static real tol;
 
 	/*  given the set of data points (x(i),y(i)) and the set of positive */
-	/*  numbers w(i),i=1,2,...,m,subroutine curfit determines a smooth spline 
-*/
+	/*  numbers w(i),i=1,2,...,m,subroutine curfit determines a smooth spline */
 	/*  approximation of degree k on the interval xb <= x <= xe. */
 	/*  if iopt=-1 curfit calculates the weighted least-squares spline */
 	/*  according to a given set of knots. */
 	/*  if iopt>=0 the number of knots of the spline s(x) and the position */
-	/*  t(j),j=1,2,...,n is chosen automatically by the routine. the smooth- 
-*/
+	/*  t(j),j=1,2,...,n is chosen automatically by the routine. the smooth- */
 	/*  ness of s(x) is then achieved by minimalizing the discontinuity */
-	/*  jumps of the k-th derivative of s(x) at the knots t(j),j=k+2,k+3,..., 
-*/
+	/*  jumps of the k-th derivative of s(x) at the knots t(j),j=k+2,k+3,..., */
 	/*  n-k-1. the amount of smoothness is determined by the condition that */
 	/*  f(p)=sum((w(i)*(y(i)-s(x(i))))**2) be <= s, with s a given non- */
 	/*  negative constant, called the smoothing factor. */
