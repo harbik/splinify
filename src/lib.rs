@@ -36,60 +36,65 @@ extern {
     with the selected value for s but now with iopt=0. 
 
     */
-    fn curfit_(
-        iopt: &i32, 
-        m: &usize,  // nr of data points
-        x: *const f64, 
-        y: *const f64, 
-        w: *const f64, 
-        xb: &f64, 
+    fn curfit(
+        iopt: &i32,     // iopt -1: Least-squares spline fixed knots, 0,1: smoothing spline. iopt=0 and s=0: interpolating spline
+        m: &usize,      // Number of data points supplied
+        x: *const f64,  // Array of x coordinates (at least m values)
+        y: *const f64,  // Array of y coordinates (at least m values)
+        w: *const f64,  // Array weights (at least m values)
+        xb: &f64,       // Bounderies of the approximation interval. xb<=x(1), xe>=x(m)
         xe: &f64, 
-        k: &usize, 
-        s: &f64, 
-        nest: &usize, 
-        n: &mut usize, 
-        t: *mut f64, 
-        c: *mut f64, 
-        fp: &mut f64, 
-        wrk: *mut f64, 
-        lwrk: &usize, 
-        iwrk: *mut i32, 
-        ier: &mut i32
+        k: &usize,      // Degree of the spline, Cubic = 3
+        s: &f64,        // Smoothing factor to be used if iopt >= 0
+        nest: &usize,   // nest = m + k + 1
+        n: &mut usize,  // Number of knots returned. For iopt=-1 value needs to pe specified on entry
+        t: *mut f64,    // Array of dimension of at least nest. For iopt=-1 array of knots to be used for lsq spline
+        c: *mut f64,    // Double array of at least nest. Will contain the coefficients of the b-spline representation
+        fp: &mut f64,   // Weighted sum of the squared residuals of the spline approximation.
+        wrk: *mut f64,  // Double array of dimension at least (m(k+1)+nest(7+3k)).
+        lwrk: &usize,   // Size of 'wrk'
+        iwrk: *mut i32, // int Array of at least nest (m + k + 1)
+        ier: &mut i32   // Error flag.
     );
 
-    fn splev_(
-        t: *const f64, // array,length n, which contains the position of the knots
-        n: &usize,       // integer, giving the total number of knots of s(x). 
-        c: *const f64, // array,length n, which contains the b-spline coefficients
-        k: &usize,       // integer, giving the degree of s(x)
-        x: *const f64, // array,length m, which contains the points where s(x) must be evaluated
-        y: *mut f64,   // array,length m, giving the value of s(x) at the different points
-        m: &usize,       // lenght of x and y
-        ier: &mut i32, // ier = 0 : normal return;  ier =10 : invalid input data 
-        // restrictions:  m >= 1, t(k+1) <= x(i) <= x(i+1) <= t(n-k) , i=1,2,...,m-1
+    fn splev(
+        t: *const f64,  // array,length n, which contains the position of the knots
+        n: &usize,      // integer, giving the total number of knots of s(x). 
+        c: *const f64,  // array,length n, which contains the b-spline coefficients
+        k: &usize,      // integer, giving the degree of s(x)
+        x: *const f64,  // array,length m, which contains the points where s(x) must be evaluated
+        y: *mut f64,    // array,length m, giving the value of s(x) at the different points
+        m: &usize,      // lenght of x and y
+        ier: &mut i32,  // ier = 0 : normal return;  ier =10 : invalid input data : restrictions:  m >= 1, t(k+1) <= x(i) <= x(i+1) <= t(n-k) , i=1,2,...,m-1
     ); 
 }
 
-pub struct Spline {
-    n: usize,       // total number fo knots
+pub type CubicSpline = Spline<3>;
+
+pub struct Spline<const K:usize> {
     t: Vec<f64>,    // Position of the knots
     c: Vec<f64>,    // b-Spline coefficients
-    k: usize,       // Spline degree
     fp: f64,        // weighted sum of the square residuals
 }
 
 
-impl Spline {
+impl<const K:usize> Spline<K> {
     fn spline_base(x: Vec<f64>, y: Vec<f64>, weights: Option<Vec<f64>>, rms_error: Option<f64>, knots: Option<Vec<f64>>) -> Self {
+        let k = K;
         let iopt = if knots.is_some() {
             -1 // least squares spline
         } else {
             0 // smoothing splnie
         };
+
         let m = x.len();
         assert!(m == y.len());
         let w = weights.unwrap_or(vec![1.0; m]);
         assert!(w.len() == m);
+
+        let xb = x[0];
+        let xe = x[m-1];
+
         let s = if iopt == 0 {
             let e_r = rms_error.unwrap_or({
                 //  1% average deviation as starting point
@@ -101,43 +106,47 @@ impl Spline {
             // not used for least squares spline
             0.0
         };
-        let k = 3;
         let nest = m * k  + 1;
-        let mut this = Self {
-            t: knots.unwrap_or(vec![0.0; nest]),
-            c: vec![0.0; nest],
-            n: 0,
-            fp: 0.0,
-            k,
-        };
-        let xb = x[0];
-        let xe = x[(m-1) as usize];
+
+        let mut t = knots.unwrap_or(vec![0.0; nest]);
+        let mut c = vec![0.0; nest];
+        let mut n = t.len();
+
         let lwrk = m * (k + 1) + nest * (7 + 3 * k);
         let mut wrk = vec![0f64; lwrk as usize];
         let mut iwrk = vec![0i32; lwrk as usize];
         let mut ierr = 0;
+
+        let mut fp = 0.0;
+
         unsafe {
-            curfit_(&iopt, 
+            curfit(&iopt, 
                 &m, 
                 x.as_ptr(), 
                 y.as_ptr(), 
                 w.as_ptr(), 
                 &xb, 
                 &xe, 
-                &this.k, 
+                &k, 
                 &s, 
                 &nest, 
-                &mut this.n, 
-                this.t.as_mut_ptr(),
-                this.c.as_mut_ptr(), 
-                &mut this.fp, 
+                &mut n, 
+                t.as_mut_ptr(),
+                c.as_mut_ptr(), 
+                &mut fp, 
                 wrk.as_mut_ptr(), 
                 &lwrk, 
                 iwrk.as_mut_ptr(), 
                 &mut ierr
             );
         }
-        this
+        t.truncate(n); // opt 0, 1, no change for opt -1, as than t has fixed lenght
+        t.truncate(n);
+        Self {
+            t,
+            c,
+            fp
+        }
 
     }
 
@@ -170,15 +179,17 @@ impl Spline {
     }
 
     pub fn values(&self, x: &Vec<f64>) -> Vec<f64> {
+        let k = K;
         let m = x.len();
         let mut y = vec![0.0; m];
+        let n = self.t.len();
         let mut ierr = 0;
         unsafe {
-            splev_(
+            splev(
                 self.t.as_ptr(), 
-                &self.n, 
+                &n, 
                 self.c.as_ptr(), 
-                &self.k, 
+                &k, 
                 x.as_ptr(), 
                 y.as_mut_ptr(), 
                 &m, 
@@ -194,7 +205,7 @@ impl Spline {
 fn test_smoothing(){
     let xi = vec![0.0, 2.0, 4.0, 6.0, 8.0, 10.0];
     let yi = xi.iter().map(|x|x*x).collect();
-    let d = Spline::new_interpolating_spline(xi, yi, None);
+    let d = CubicSpline::new_interpolating_spline(xi, yi, None);
     let x = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
     let y = d.values(&x);
     println!("{:.4?}", y);

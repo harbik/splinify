@@ -231,7 +231,7 @@ typedef doublereal E_f; /* real function with -R not specified */
 	-lf2c -lm   (in that order)
 */
 
-/* Subroutine */ int curfit_(iopt, m, x, y, w, xb, xe, k, s, nest, n, t, c,
+/* Subroutine */ int curfit(iopt, m, x, y, w, xb, xe, k, s, nest, n, t, c,
 							 fp, wrk, lwrk, iwrk, ier)
 	integer *iopt,
 	*m;
@@ -247,9 +247,9 @@ integer *lwrk, *iwrk, *ier;
 
 	/* Local variables */
 	static integer nmin, i, j, maxit, k1, k2, lwest, ia, ib, ig;
-	extern /* Subroutine */ int fpchec_();
+	extern /* Subroutine */ int fpchec();
 	static integer iq, iz;
-	extern /* Subroutine */ int fpcurf_();
+	extern /* Subroutine */ int fpcurf();
 	static integer ifp;
 	static real tol;
 
@@ -278,25 +278,19 @@ integer *lwrk, *iwrk, *ier;
 	/*    * lwrk,iwrk,ier) */
 
 	/*  parameters: */
-	/*   iopt  : integer flag. on entry iopt must specify whether a weighted 
-*/
-	/*           least-squares spline (iopt=-1) or a smoothing spline (iopt= 
-*/
-	/*           0 or 1) must be determined. if iopt=0 the routine will start 
-*/
-	/*           with an initial set of knots t(i)=xb, t(i+k+1)=xe, i=1,2,... 
-*/
+	/*   iopt  : integer flag. on entry iopt must specify whether a weighted */
+	/*           least-squares spline (iopt=-1) or a smoothing spline (iopt= */
+	/*           0 or 1) must be determined. if iopt=0 the routine will start */
+	/*           with an initial set of knots t(i)=xb, t(i+k+1)=xe, i=1,2,...  */
 	/*           k+1. if iopt=1 the routine will continue with the knots */
 	/*           found at the last call of the routine. */
 	/*           attention: a call with iopt=1 must always be immediately */
 	/*           preceded by another call with iopt=1 or iopt=0. */
 	/*           unchanged on exit. */
-	/*   m     : integer. on entry m must specify the number of data points. 
-*/
+	/*   m     : integer. on entry m must specify the number of data points.  */
 	/*           m > k. unchanged on exit. */
 	/*   x     : real array of dimension at least (m). before entry, x(i) */
-	/*           must be set to the i-th value of the independent variable x, 
-*/
+	/*           must be set to the i-th value of the independent variable x, */
 	/*           for i=1,2,...,m. these values must be supplied in strictly */
 	/*           ascending order. unchanged on exit. */
 	/*   y     : real array of dimension at least (m). before entry, y(i) */
@@ -306,21 +300,17 @@ integer *lwrk, *iwrk, *ier;
 	/*           must be set to the i-th value in the set of weights. the */
 	/*           w(i) must be strictly positive. unchanged on exit. */
 	/*           see also further comments. */
-	/*   xb,xe : real values. on entry xb and xe must specify the boundaries 
-*/
+	/*   xb,xe : real values. on entry xb and xe must specify the boundaries */
 	/*           of the approximation interval. xb<=x(1), xe>=x(m). */
 	/*           unchanged on exit. */
 	/*   k     : integer. on entry k must specify the degree of the spline. */
 	/*           1<=k<=5. it is recommended to use cubic splines (k=3). */
-	/*           the user is strongly dissuaded from choosing k even,together 
-*/
+	/*           the user is strongly dissuaded from choosing k even,together */
 	/*           with a small s-value. unchanged on exit. */
-	/*   s     : real.on entry (in case iopt>=0) s must specify the smoothing 
-*/
+	/*   s     : real.on entry (in case iopt>=0) s must specify the smoothing */
 	/*           factor. s >=0. unchanged on exit. */
 	/*           for advice on the choice of s see further comments. */
-	/*   nest  : integer. on entry nest must contain an over-estimate of the 
-*/
+	/*   nest  : integer. on entry nest must contain an over-estimate of the */
 	/*           total number of knots of the spline returned, to indicate */
 	/*           the storage space available to the routine. nest >=2*k+2. */
 	/*           in most practical situation nest=m/2 will be sufficient. */
@@ -328,59 +318,45 @@ integer *lwrk, *iwrk, *ier;
 	/*           needed for interpolation (s=0). unchanged on exit. */
 	/*   n     : integer. */
 	/*           unless ier =10 (in case iopt >=0), n will contain the */
-	/*           total number of knots of the spline approximation returned. 
-*/
+	/*           total number of knots of the spline approximation returned.  */
 	/*           if the computation mode iopt=1 is used this value of n */
 	/*           should be left unchanged between subsequent calls. */
-	/*           in case iopt=-1, the value of n must be specified on entry. 
-*/
+	/*           in case iopt=-1, the value of n must be specified on entry.  */
 	/*   t     : real array of dimension at least (nest). */
-	/*           on succesful exit, this array will contain the knots of the 
-*/
-	/*           spline,i.e. the position of the interior knots t(k+2),t(k+3) 
-*/
-	/*           ...,t(n-k-1) as well as the position of the additional knots 
-*/
+	/*           on succesful exit, this array will contain the knots of the */
+	/*           spline,i.e. the position of the interior knots t(k+2),t(k+3) */
+	/*           ...,t(n-k-1) as well as the position of the additional knots */
 	/*           t(1)=t(2)=...=t(k+1)=xb and t(n-k)=...=t(n)=xe needed for */
 	/*           the b-spline representation. */
-	/*           if the computation mode iopt=1 is used, the values of t(1), 
-*/
+	/*           if the computation mode iopt=1 is used, the values of t(1), */
 	/*           t(2),...,t(n) should be left unchanged between subsequent */
 	/*           calls. if the computation mode iopt=-1 is used, the values */
 	/*           t(k+2),...,t(n-k-1) must be supplied by the user, before */
 	/*           entry. see also the restrictions (ier=10). */
 	/*   c     : real array of dimension at least (nest). */
-	/*           on succesful exit, this array will contain the coefficients 
-*/
-	/*           c(1),c(2),..,c(n-k-1) in the b-spline representation of s(x) 
-*/
+	/*           on succesful exit, this array will contain the coefficients */
+	/*           c(1),c(2),..,c(n-k-1) in the b-spline representation of s(x) */
 	/*   fp    : real. unless ier=10, fp contains the weighted sum of */
 	/*           squared residuals of the spline approximation returned. */
 	/*   wrk   : real array of dimension at least (m*(k+1)+nest*(7+3*k)). */
 	/*           used as working space. if the computation mode iopt=1 is */
-	/*           used, the values wrk(1),...,wrk(n) should be left unchanged 
-*/
+	/*           used, the values wrk(1),...,wrk(n) should be left unchanged */
 	/*           between subsequent calls. */
-	/*   lwrk  : integer. on entry,lwrk must specify the actual dimension of 
-*/
+	/*   lwrk  : integer. on entry,lwrk must specify the actual dimension of */
 	/*           the array wrk as declared in the calling (sub)program.lwrk */
 	/*           must not be too small (see wrk). unchanged on exit. */
 	/*   iwrk  : integer array of dimension at least (nest). */
 	/*           used as working space. if the computation mode iopt=1 is */
-	/*           used,the values iwrk(1),...,iwrk(n) should be left unchanged 
-*/
+	/*           used,the values iwrk(1),...,iwrk(n) should be left unchanged */
 	/*           between subsequent calls. */
-	/*   ier   : integer. unless the routine detects an error, ier contains a 
-*/
+	/*   ier   : integer. unless the routine detects an error, ier contains a */
 	/*           non-positive value on exit, i.e. */
 	/*    ier=0  : normal return. the spline returned has a residual sum of */
-	/*             squares fp such that abs(fp-s)/s <= tol with tol a relat- 
-*/
+	/*             squares fp such that abs(fp-s)/s <= tol with tol a relat- */
 	/*             ive tolerance set to 0.001 by the program. */
 	/*    ier=-1 : normal return. the spline returned is an interpolating */
 	/*             spline (fp=0). */
-	/*    ier=-2 : normal return. the spline returned is the weighted least- 
-*/
+	/*    ier=-2 : normal return. the spline returned is the weighted least- */
 	/*             squares polynomial of degree k. in this extreme case fp */
 	/*             gives the upper bound fp0 for the smoothing factor s. */
 	/*    ier=1  : error. the required storage space exceeds the available */
@@ -389,12 +365,10 @@ integer *lwrk, *iwrk, *ier;
 	/*             large (say nest > m/2), it may also indicate that s is */
 	/*             too small */
 	/*             the approximation returned is the weighted least-squares */
-	/*             spline according to the knots t(1),t(2),...,t(n). (n=nest) 
-*/
+	/*             spline according to the knots t(1),t(2),...,t(n). (n=nest) */
 	/*             the parameter fp gives the corresponding weighted sum of */
 	/*             squared residuals (fp>s). */
-	/*    ier=2  : error. a theoretically impossible result was found during 
-*/
+	/*    ier=2  : error. a theoretically impossible result was found during */
 	/*             the iteration proces for finding a smoothing spline with */
 	/*             fp = s. probably causes : s too small. */
 	/*             there is an approximation returned but the corresponding */
@@ -402,27 +376,22 @@ integer *lwrk, *iwrk, *ier;
 	/*             condition abs(fp-s)/s < tol. */
 	/*    ier=3  : error. the maximal number of iterations maxit (set to 20 */
 	/*             by the program) allowed for finding a smoothing spline */
-	/*             with fp=s has been reached. probably causes : s too small 
-*/
+	/*             with fp=s has been reached. probably causes : s too small */
 	/*             there is an approximation returned but the corresponding */
 	/*             weighted sum of squared residuals does not satisfy the */
 	/*             condition abs(fp-s)/s < tol. */
-	/*    ier=10 : error. on entry, the input data are controlled on validity 
-*/
+	/*    ier=10 : error. on entry, the input data are controlled on validity */
 	/*             the following restrictions must be satisfied. */
-	/*             -1<=iopt<=1, 1<=k<=5, m>k, nest>2*k+2, w(i)>0,i=1,2,...,m 
-*/
+	/*             -1<=iopt<=1, 1<=k<=5, m>k, nest>2*k+2, w(i)>0,i=1,2,...,m */
 	/*             xb<=x(1)<x(2)<...<x(m)<=xe, lwrk>=(k+1)*m+nest*(7+3*k) */
 	/*             if iopt=-1: 2*k+2<=n<=min(nest,m+k+1) */
 	/*                         xb<t(k+2)<t(k+3)<...<t(n-k-1)<xe */
 	/*                       the schoenberg-whitney conditions, i.e. there */
-	/*                       must be a subset of data points xx(j) such that 
-*/
+	/*                       must be a subset of data points xx(j) such that */
 	/*                         t(j) < xx(j) < t(j+k+1), j=1,2,...,n-k-1 */
 	/*             if iopt>=0: s>=0 */
 	/*                         if s=0 : nest >= m+k+1 */
-	/*             if one of these conditions is found to be violated,control 
-*/
+	/*             if one of these conditions is found to be violated,control */
 	/*             is immediately repassed to the calling program. in that */
 	/*             case there is no approximation returned. */
 
@@ -583,7 +552,7 @@ integer *lwrk, *iwrk, *ier;
 		--j;
 		/* L20: */
 	}
-	fpchec_(&x[1], m, &t[1], n, k, ier);
+	fpchec(&x[1], m, &t[1], n, k, ier);
 	if (*ier != 0)
 	{
 		goto L50;
@@ -611,7 +580,7 @@ L40:
 	ib = ia + *nest * k1;
 	ig = ib + *nest * k2;
 	iq = ig + *nest * k2;
-	fpcurf_(iopt, &x[1], &y[1], &w[1], m, xb, xe, k, s, nest, &tol, &maxit, &k1, &k2, n, &t[1], &c[1], fp, &wrk[ifp], &wrk[iz], &wrk[ia], &wrk[ib], &wrk[ig], &wrk[iq], &iwrk[1], ier);
+	fpcurf(iopt, &x[1], &y[1], &w[1], m, xb, xe, k, s, nest, &tol, &maxit, &k1, &k2, n, &t[1], &c[1], fp, &wrk[ifp], &wrk[iz], &wrk[ia], &wrk[ib], &wrk[ig], &wrk[iq], &iwrk[1], ier);
 L50:
 	return 0;
 } /* curfit_ */
@@ -621,7 +590,7 @@ L50:
 	-lf2c -lm   (in that order)
 */
 
-/* Subroutine */ int splev_(t, n, c, k, x, y, m, ier)
+/* Subroutine */ int splev(t, n, c, k, x, y, m, ier)
 	real *t;
 integer *n;
 real *c;
@@ -638,7 +607,7 @@ integer *m, *ier;
 	static real tb;
 	static integer ll;
 	static real te, sp;
-	extern /* Subroutine */ int fpbspl_();
+	extern /* Subroutine */ int fpbspl();
 	static integer nk1;
 	static real arg;
 
@@ -754,7 +723,7 @@ L30:
 		goto L40;
 	/*  evaluate the non-zero b-splines at arg. */
 	L50:
-		fpbspl_(&t[1], n, k, &arg, &l, h);
+		fpbspl(&t[1], n, k, &arg, &l, h);
 		/*  find the value of s(x) at x=arg. */
 		sp = (float)0.;
 		ll = l - k1;
@@ -772,7 +741,7 @@ L100:
 	return 0;
 } /* splev_ */
 
-/* Subroutine */ int fpback_(a, z, n, k, c, nest)
+/* Subroutine */ int fpback(a, z, n, k, c, nest)
 	real *a,
 	*z;
 integer *n, *k;
@@ -835,7 +804,7 @@ L30:
 	return 0;
 } /* fpback_ */
 
-/* Subroutine */ int fpbspl_(t, n, k, x, l, h)
+/* Subroutine */ int fpbspl(t, n, k, x, l, h)
 	real *t;
 integer *n, *k;
 real *x;
@@ -892,7 +861,7 @@ real *h;
 	return 0;
 } /* fpbspl_ */
 
-/* Subroutine */ int fpchec_(x, m, t, n, k, ier)
+/* Subroutine */ int fpchec(x, m, t, n, k, ier)
 	real *x;
 integer *m;
 real *t;
@@ -1015,7 +984,7 @@ L80:
 
 static integer c__1 = 1;
 
-/* Subroutine */ int fpcurf_(iopt, x, y, w, m, xb, xe, k, s, nest, tol, maxit,
+/* Subroutine */ int fpcurf(iopt, x, y, w, m, xb, xe, k, s, nest, tol, maxit,
 							 k1, k2, n, t, c, fp, fpint, z, a, b, g, q, nrdata, ier)
 	integer *iopt;
 real *x, *y, *w;
@@ -1045,12 +1014,12 @@ integer *nrdata, *ier;
 	static integer i3, k3;
 	static real p1, p2, p3;
 	static integer l0, nplus, nrint, n8;
-	extern /* Subroutine */ int fpback_();
+	extern /* Subroutine */ int fpback();
 	static integer it;
 	static real rn, wi, xi, yi;
-	extern /* Subroutine */ int fpdisc_();
-	extern doublereal fprati_();
-	extern /* Subroutine */ int fpbspl_(), fprota_(), fpgivs_(), fpknot_();
+	extern /* Subroutine */ int fpdisc();
+	extern doublereal fprati();
+	extern /* Subroutine */ int fpbspl(), fprota(), fpgivs(), fpknot();
 	static real fp0;
 	static integer mk1, nk1;
 	static real acc, one, cos_, sin_;
@@ -1260,7 +1229,7 @@ L60:
 		/*  evaluate the (k+1) non-zero b-splines at xi and store them in 
 q. */
 		L90:
-			fpbspl_(&t[1], n, k, &xi, &l, h);
+			fpbspl(&t[1], n, k, &xi, &l, h);
 			i__2 = *k1;
 			for (i = 1; i <= i__2; ++i)
 			{
@@ -1280,9 +1249,9 @@ q. */
 					goto L110;
 				}
 				/*  calculate the parameters of the givens transformation. */
-				fpgivs_(&piv, &a[j + a_dim1], &cos_, &sin_);
+				fpgivs(&piv, &a[j + a_dim1], &cos_, &sin_);
 				/*  transformations to right hand side. */
-				fprota_(&cos_, &sin_, &yi, &z[j]);
+				fprota(&cos_, &sin_, &yi, &z[j]);
 				if (i == *k1)
 				{
 					goto L120;
@@ -1294,7 +1263,7 @@ q. */
 				{
 					++i2;
 					/*  transformations to left hand side. */
-					fprota_(&cos_, &sin_, &h[i1 - 1], &a[j + i2 * a_dim1]);
+					fprota(&cos_, &sin_, &h[i1 - 1], &a[j + i2 * a_dim1]);
 					/* L100: */
 				}
 			L110:;
@@ -1316,7 +1285,7 @@ q. */
 		fpint[*n - 1] = fpold;
 		nrdata[*n] = nplus;
 		/*  backward substitution to obtain the b-spline coefficients. */
-		fpback_(&a[a_offset], &z[1], &nk1, k1, &c[1], nest);
+		fpback(&a[a_offset], &z[1], &nk1, k1, &c[1], nest);
 		/*  test whether the approximation sinf(x) is an acceptable solution. 
 */
 		if (*iopt < 0)
@@ -1414,7 +1383,7 @@ q. */
 		for (l = 1; l <= i__3; ++l)
 		{
 			/*  add a new knot. */
-			fpknot_(&x[1], m, &t[1], n, &fpint[1], &nrdata[1], &nrint, nest, &c__1);
+			fpknot(&x[1], m, &t[1], n, &fpint[1], &nrdata[1], &nrint, nest, &c__1);
 			/*  if n=nmax we locate the knots as for interpolation. */
 			if (*n == nmax)
 			{
@@ -1461,7 +1430,7 @@ L250:
 	/* ccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc */
 	/*  evaluate the discontinuity jump of the kth derivative of the */
 	/*  b-splines at the knots t(l),l=k+2,...n-k-1 and store in b. */
-	fpdisc_(&t[1], n, k2, &b[b_offset], nest);
+	fpdisc(&t[1], n, k2, &b[b_offset], nest);
 	/*  initial value for p. */
 	p1 = (float)0.;
 	f1 = fp0 - *s;
@@ -1515,9 +1484,9 @@ rmation */
 			{
 				piv = h[0];
 				/*  calculate the parameters of the givens transformation. */
-				fpgivs_(&piv, &g[j + g_dim1], &cos_, &sin_);
+				fpgivs(&piv, &g[j + g_dim1], &cos_, &sin_);
 				/*  transformations to right hand side. */
-				fprota_(&cos_, &sin_, &yi, &c[j]);
+				fprota(&cos_, &sin_, &yi, &c[j]);
 				if (j == nk1)
 				{
 					goto L300;
@@ -1532,7 +1501,7 @@ rmation */
 				{
 					/*  transformations to left hand side. */
 					i1 = i + 1;
-					fprota_(&cos_, &sin_, &h[i1 - 1], &g[j + i1 * g_dim1]);
+					fprota(&cos_, &sin_, &h[i1 - 1], &g[j + i1 * g_dim1]);
 					h[i - 1] = h[i1 - 1];
 					/* L280: */
 				}
@@ -1542,7 +1511,7 @@ rmation */
 		L300:;
 		}
 		/*  backward substitution to obtain the b-spline coefficients. */
-		fpback_(&g[g_offset], &c[1], &nk1, k2, &c[1], nest);
+		fpback(&g[g_offset], &c[1], &nk1, k2, &c[1], nest);
 		/*  computation of f(p). */
 		*fp = (float)0.;
 		l = *k2;
@@ -1640,7 +1609,7 @@ rmation */
 			goto L410;
 		}
 		/*  find the new value for p. */
-		p = fprati_(&p1, &f1, &p2, &f2, &p3, &f3);
+		p = fprati(&p1, &f1, &p2, &f2, &p3, &f3);
 	L360:;
 	}
 /*  error codes and messages. */
@@ -1659,7 +1628,7 @@ L440:
 	return 0;
 } /* fpcurf_ */
 
-/* Subroutine */ int fpdisc_(t, n, k2, b, nest)
+/* Subroutine */ int fpdisc(t, n, k2, b, nest)
 	real *t;
 integer *n, *k2;
 real *b;
@@ -1734,7 +1703,7 @@ integer *nest;
 	return 0;
 } /* fpdisc_ */
 
-/* Subroutine */ int fpgivs_(piv, ww, cos_, sin_)
+/* Subroutine */ int fpgivs(piv, ww, cos_, sin_)
 	real *piv,
 	*ww, *cos_, *sin_;
 {
@@ -1774,7 +1743,7 @@ integer *nest;
 	return 0;
 } /* fpgivs_ */
 
-/* Subroutine */ int fpknot_(x, m, t, n, fpint, nrdata, nrint, nest, istart)
+/* Subroutine */ int fpknot(x, m, t, n, fpint, nrdata, nrint, nest, istart)
 	real *x;
 integer *m;
 real *t;
@@ -1871,7 +1840,7 @@ L40:
 	return 0;
 } /* fpknot_ */
 
-doublereal fprati_(p1, f1, p2, f2, p3, f3)
+doublereal fprati(p1, f1, p2, f2, p3, f3)
 	real *p1,
 	*f1, *p2, *f2, *p3, *f3;
 {
@@ -1918,7 +1887,7 @@ L40:
 	return ret_val;
 } /* fprati_ */
 
-/* Subroutine */ int fprota_(cos_, sin_, a, b)
+/* Subroutine */ int fprota(cos_, sin_, a, b)
 	real *cos_,
 	*sin_, *a, *b;
 {
