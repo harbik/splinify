@@ -265,8 +265,7 @@ integer *lwrk, *iwrk, *ier;
 	/*  n-k-1. the amount of smoothness is determined by the condition that */
 	/*  f(p)=sum((w(i)*(y(i)-s(x(i))))**2) be <= s, with s a given non- */
 	/*  negative constant, called the smoothing factor. */
-	/*  the fit s(x) is given in the b-spline representation (b-spline coef- 
-*/
+	/*  the fit s(x) is given in the b-spline representation (b-spline coef- */
 	/*  ficients c(j),j=1,2,...,n-k-1) and can be evaluated by means of */
 	/*  subroutine splev. */
 
@@ -394,43 +393,30 @@ integer *lwrk, *iwrk, *ier;
 
 	/*  further comments: */
 	/*   by means of the parameter s, the user can control the tradeoff */
-	/*   between closeness of fit and smoothness of fit of the approximation. 
-*/
-	/*   if s is too large, the spline will be too smooth and signal will be 
-*/
-	/*   lost ; if s is too small the spline will pick up too much noise. in 
-*/
-	/*   the extreme cases the program will return an interpolating spline if 
-*/
+	/*   between closeness of fit and smoothness of fit of the approximation.  */
+	/*   if s is too large, the spline will be too smooth and signal will be */
+	/*   lost ; if s is too small the spline will pick up too much noise. in */
+	/*   the extreme cases the program will return an interpolating spline if */
 	/*   s=0 and the weighted least-squares polynomial of degree k if s is */
-	/*   very large. between these extremes, a properly chosen s will result 
-*/
-	/*   in a good compromise between closeness of fit and smoothness of fit. 
-*/
-	/*   to decide whether an approximation, corresponding to a certain s is 
-*/
+	/*   very large. between these extremes, a properly chosen s will result */
+	/*   in a good compromise between closeness of fit and smoothness of fit.  */
+	/*   to decide whether an approximation, corresponding to a certain s is */
 	/*   satisfactory the user is highly recommended to inspect the fits */
 	/*   graphically. */
 	/*   recommended values for s depend on the weights w(i). if these are */
 	/*   taken as 1/d(i) with d(i) an estimate of the standard deviation of */
 	/*   y(i), a good s-value should be found in the range (m-sqrt(2*m),m+ */
-	/*   sqrt(2*m)). if nothing is known about the statistical error in y(i) 
-*/
+	/*   sqrt(2*m)). if nothing is known about the statistical error in y(i) */
 	/*   each w(i) can be set equal to one and s determined by trial and */
 	/*   error, taking account of the comments above. the best is then to */
-	/*   start with a very large value of s ( to determine the least-squares 
-*/
-	/*   polynomial and the corresponding upper bound fp0 for s) and then to 
-*/
+	/*   start with a very large value of s ( to determine the least-squares */
+	/*   polynomial and the corresponding upper bound fp0 for s) and then to */
 	/*   progressively decrease the value of s ( say by a factor 10 in the */
 	/*   beginning, i.e. s=fp0/10, fp0/100,...and more carefully as the */
 	/*   approximation shows more detail) to obtain closer fits. */
-	/*   to economize the search for a good s-value the program provides with 
-*/
-	/*   different modes of computation. at the first call of the routine, or 
-*/
-	/*   whenever he wants to restart with the initial set of knots the user 
-*/
+	/*   to economize the search for a good s-value the program provides with */
+	/*   different modes of computation. at the first call of the routine, or */
+	/*   whenever he wants to restart with the initial set of knots the user */
 	/*   must set iopt=0. */
 	/*   if iopt=1 the program will continue with the set of knots found at */
 	/*   the last call of the routine. this will save a lot of computation */
@@ -439,14 +425,11 @@ integer *lwrk, *iwrk, *ier;
 	/*   depend on the value of s and on the complexity of the shape of the */
 	/*   function underlying the data. but, if the computation mode iopt=1 */
 	/*   is used, the knots returned may also depend on the s-values at */
-	/*   previous calls (if these were smaller). therefore, if after a number 
-*/
+	/*   previous calls (if these were smaller). therefore, if after a number */
 	/*   of trials with different s-values and iopt=1, the user can finally */
 	/*   accept a fit as satisfactory, it may be worthwhile for him to call */
-	/*   curfit once more with the selected value for s but now with iopt=0. 
-*/
-	/*   indeed, curfit may then return an approximation of the same quality 
-*/
+	/*   curfit once more with the selected value for s but now with iopt=0.  */
+	/*   indeed, curfit may then return an approximation of the same quality */
 	/*   of fit but with fewer knots and therefore better if data reduction */
 	/*   is also an important objective for the user. */
 
@@ -454,8 +437,7 @@ integer *lwrk, *iwrk, *ier;
 	/*    fpback,fpbspl,fpchec,fpcurf,fpdisc,fpgivs,fpknot,fprati,fprota */
 
 	/*  references: */
-	/*   dierckx p. : an algorithm for smoothing, differentiation and integ- 
-*/
+	/*   dierckx p. : an algorithm for smoothing, differentiation and integ- */
 	/*                ration of experimental data using spline functions, */
 	/*                j.comp.appl.maths 1 (1975) 165-184. */
 	/*   dierckx p. : a fast algorithm for smoothing data on a rectangular */
@@ -653,8 +635,7 @@ integer *m, *ier;
 	/*  ..local scalars.. */
 	/*  ..local array.. */
 	/*  .. */
-	/*  before starting computations a data check is made. if the input data 
-*/
+	/*  before starting computations a data check is made. if the input data */
 	/*  are invalid control is immediately repassed to the calling program. */
 	/* Parameter adjustments */
 	--y;
@@ -1467,8 +1448,7 @@ L250:
 		i__2 = n8;
 		for (it = 1; it <= i__2; ++it)
 		{
-			/*  the row of matrix b is rotated into triangle by givens transfo
-rmation */
+			/*  the row of matrix b is rotated into triangle by givens transformation */
 			i__3 = *k2;
 			for (i = 1; i <= i__3; ++i)
 			{
