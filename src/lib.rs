@@ -103,11 +103,55 @@ impl fmt::Display for DierckxError {
 impl error::Error for DierckxError {}
 
 
+/**
+ * Spline (t,c) control points.
+ */
 pub struct Spline<const K:usize> {
     pub t: Vec<f64>,    // Knot values
     pub c: Vec<f64>,    // b-Spline coefficients
 }
 
+impl<const K:usize> Spline<K>  {
+    pub fn new(t: Vec<f64>, c: Vec<f64>) -> Self {
+        assert!(t.len()==c.len());
+        Self {t, c}
+    }
+    
+    pub fn values(&self, x: Vec<f64>) -> Result<Vec<f64>> {
+        let k = K;
+        let m = x.len();
+        let mut y = vec![0.0; m];
+        let n = self.t.len();
+        let mut ierr = 0;
+        unsafe {
+            splev(
+                self.t.as_ptr(), 
+                &n, 
+                self.c.as_ptr(), 
+                &k, 
+                x.as_ptr(), 
+                y.as_mut_ptr(), 
+                &m, 
+                &mut ierr)
+        }
+        if ierr<=0 {
+            Ok(y)
+        } else {
+            Err(DierckxError::new(ierr).into())
+        }
+    }
+}
+
+/*
+impl<const K:usize> AsRef<Spline<K>> for Dierckx<K> {
+    fn as_ref(&self) -> &Spline<K> {
+        &Spline {
+            t: self.t,
+            c: self.c,
+        }
+    }
+}
+*/
 
 
 
@@ -117,10 +161,7 @@ pub struct Dierckx<const K:usize> {
     y: Vec<f64>,    // data y coordinates
     w: Vec<f64>,    // weight factors, 
 
-    // output
-    t: Vec<f64>,    // Knot values
-    c: Vec<f64>,    // b-Spline coefficients
-                    // (t,c) coordinates can 'control points'
+    tc: Spline<K>,
 
     // work space values
     wrk: Vec<f64>,  // used for successive tries
@@ -137,14 +178,13 @@ impl<const K:usize> Dierckx<K> {
         assert!(w.len()==y.len());
 
         let nest = m * K  + 1;
-        let t = vec![0.0; nest];
-        let c = vec![0.0; nest];
+        let tc = Spline::<K>::new(vec![0.0; nest], vec![0.0; nest]);
 
         let lwrk = m * (K + 1) + nest * (7 + 3 * K);
         let wrk = vec![0f64; lwrk];
         let iwrk = vec![0i32; lwrk];
 
-        Self { x, y, w, t, c, wrk, iwrk}
+        Self { x, y, w, tc, wrk, iwrk}
 
     }
 
@@ -167,9 +207,9 @@ impl<const K:usize> Dierckx<K> {
             0.0
         };
         if let Some(knots) = knots {
-            self.t = knots;
+            self.tc.t = knots;
         }
-        let mut n = self.t.len();
+        let mut n = self.tc.t.len();
         unsafe {
             curfit(&iopt, &m, 
                 self.x.as_ptr(), self.y.as_ptr(), self.w.as_ptr(), 
@@ -178,8 +218,8 @@ impl<const K:usize> Dierckx<K> {
                 &s, 
                 &nest, 
                 &mut n, 
-                self.t.as_mut_ptr(),
-                self.c.as_mut_ptr(), 
+                self.tc.t.as_mut_ptr(),
+                self.tc.c.as_mut_ptr(), 
                 &mut fp, 
                 self.wrk.as_mut_ptr(), 
                 &lwrk, 
@@ -187,8 +227,8 @@ impl<const K:usize> Dierckx<K> {
                 &mut ierr
             );
         }
-        self.t.truncate(n);
-        self.c.truncate(n);
+        self.tc.t.truncate(n);
+        self.tc.c.truncate(n);
         (ierr, fp.sqrt()/m as f64)
     }
 
@@ -198,11 +238,11 @@ impl<const K:usize> Dierckx<K> {
      * 
      * Returns Spline, and rms error
      */
-    pub fn cardinal_spline(&mut self, tb:f64, dt:f64, n:usize) -> Result<(Spline<K>,f64)>{
+    pub fn cardinal_spline(&mut self, tb:f64, dt:f64, n:usize) -> Result<(&Self,f64)>{
         let t: Vec<f64> = (0..n).map(|i|tb+(i as f64)*dt).collect();
         let (ierr, fp) = self.curfit(-1, Some(0.0),Some(t));
         if ierr<=0  {
-            Ok((Spline::<K>{t: self.t.clone(), c: self.c.clone()}, fp.sqrt()/self.x.len() as f64))
+            Ok((self, fp.sqrt()/self.x.len() as f64))
         } else {
             Err(DierckxError::new(ierr).into())
         }
@@ -213,10 +253,10 @@ impl<const K:usize> Dierckx<K> {
      * 
      * Knots at x,y values, no error: fp = s = 0.0;
      */ 
-    pub fn interpolating_spline(&mut self) -> Result<Spline<K>> {
+    pub fn interpolating_spline(&mut self) -> Result<&Self> {
         let (ierr, _fp) = self.curfit(0, Some(0.0),None);
         if ierr<=0  {
-            Ok(Spline::<K>{t: self.t.clone(), c: self.c.clone()})
+            Ok(self)
         } else {
             Err(DierckxError::new(ierr).into())
         }
@@ -229,10 +269,10 @@ impl<const K:usize> Dierckx<K> {
      * If no rms value is given, an rms is guessed by setting it to 1% of the average y value.
      * Repeat fit with smaller rms value using `smooth_more`.
      */
-    pub fn smoothing_spline(&mut self, rms: Option<f64>) -> Result<(Spline<K>,f64)>{
+    pub fn smoothing_spline(&mut self, rms: Option<f64>) -> Result<(&Self,f64)>{
         let (ierr, fp) = self.curfit(0, rms,None);
         if ierr<=0  {
-            Ok((Spline::<K>{t: self.t.clone(), c: self.c.clone()}, fp.sqrt()/self.x.len() as f64))
+            Ok((self, fp.sqrt()/self.x.len() as f64))
         } else {
             Err(DierckxError::new(ierr).into())
         }
@@ -243,15 +283,16 @@ impl<const K:usize> Dierckx<K> {
      * 
      * Repeat fit with smaller rms value after a first `smoothing_spline` attempt.
      */
-    pub fn smooth_more(&mut self, rms: f64) -> Result<(Spline<K>,f64)>{
+    pub fn smooth_more(&mut self, rms: f64) -> Result<(&Self,f64)>{
         let (ierr, fp) = self.curfit(1, Some(rms),None);
         if ierr<=0  {
-            Ok((Spline::<K>{t: self.t.clone(), c: self.c.clone()}, fp.sqrt()/self.x.len() as f64))
+            Ok((self, fp.sqrt()/self.x.len() as f64))
         } else {
             Err(DierckxError::new(ierr).into())
         }
     }
 
+    /*
     fn spline_base(x: Vec<f64>, y: Vec<f64>, weights: Option<Vec<f64>>, rms_error: Option<f64>, knots: Option<Vec<f64>>) -> Self {
         let k = K;
         let iopt = if knots.is_some() {
@@ -374,24 +415,33 @@ impl<const K:usize> Dierckx<K> {
         }
         y
     }
+    */
 }
 
-
+impl<const K:usize> AsRef<Spline<K>> for Dierckx<K> {
+    fn as_ref(&self) -> &Spline<K> {
+        &self.tc
+    }
+}
 
 #[test]
 fn test_smoothing() -> Result<()> {
+    /*
+
     let xi = vec![0.0, 2.0, 4.0, 6.0, 8.0, 10.0];
     let yi = xi.iter().map(|x|x*x).collect();
     let d = CubicSpline::new_interpolating_spline(xi, yi, None);
     let x = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
     let y = d.values(&x);
     println!("{:.4?}", y);
+    */
 
     let xi = vec![0.0, 2.0, 4.0, 6.0, 8.0, 10.0];
     let yi = xi.iter().map(|x|x*x).collect();
+    let x = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
     let mut d = Dierckx::<3>::new(xi, yi, None);
     let r = d.interpolating_spline()?;
-    println!("{:.4?}", r.values());
+    println!("{:.4?}", r.as_ref().values(x));
 
     Ok(())
 }
