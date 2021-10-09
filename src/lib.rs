@@ -2,6 +2,7 @@ mod dierckx;
 
 use std::error;
 use std::fmt;
+use std::iter::repeat;
 use crate::dierckx::{curfit_, splev_};
 
 
@@ -49,7 +50,7 @@ impl<const K:usize> Spline<K>  {
         Self {t, c}
     }
     
-    pub fn values(&self, x: Vec<f64>) -> Result<Vec<f64>> {
+    pub fn values(&self, x: &Vec<f64>) -> Result<Vec<f64>> {
         let k = K;
         let m = x.len();
         let mut y = vec![0.0; m];
@@ -71,7 +72,7 @@ pub struct Dierckx<const K:usize> {
     y: Vec<f64>,    // data y coordinates
     w: Vec<f64>,    // weight factors, 
 
-    tc: Spline<K>,
+    pub tc: Spline<K>,
 
     // work space values
     wrk: Vec<f64>,  // used for successive tries
@@ -98,24 +99,24 @@ impl<const K:usize> Dierckx<K> {
 
     }
 
-    fn curfit(&mut self, iopt:i32, rms:Option<f64>, knots: Option<Vec<f64>>) ->  (i32, f64) {
+    fn curfit(&mut self, iopt:i32, e_rms_pct:Option<f64>, knots: Option<Vec<f64>>) ->  (i32, f64) {
         let k = K;
         let m = self.x.len();
         let nest = m * K  + 1;
         let lwrk = self.wrk.len();
         let mut fp = 0.0;
         let mut ierr = 0;
-        let s = if iopt == 0 {
-            let e_r = rms.unwrap_or({
-                //  1% average deviation as starting point
-                 let y_avg_sum = self.y.iter().sum::<f64>();
-                 y_avg_sum/m as f64/100.0
-                });
-            m as f64 * e_r.powi(2) // curfit needs the integral square error
+        let y_rms:f64;
+        let s = if let Some(e) = e_rms_pct {
+            y_rms = (self.y.iter().map(|y|y*y).sum::<f64>()/m as f64).sqrt();
+            m as f64 * (e * y_rms / 100.0).powi(2)
         } else {
-            // not used for least squares spline
+            y_rms = f64::MAX; // to force fp output to 0.0
             0.0
         };
+        //let e_rms_pct = e_rms_pct.unwrap_or(0.0); // as percentage of y_rms
+        //let y_rms = (self.y.iter().map(|y|y*y).sum::<f64>()/m as f64).sqrt();
+        //let s = m as f64 * (e_rms_pct * y_rms / 100.0).powi(2);
         if let Some(knots) = knots {
             self.tc.t = knots;
         }
@@ -133,20 +134,42 @@ impl<const K:usize> Dierckx<K> {
         }
         self.tc.t.truncate(n);
         self.tc.c.truncate(n);
-        (ierr, fp.sqrt()/m as f64)
+        (ierr, (fp/m as f64).sqrt() * 100.0/ y_rms) // fit error as percent rms
     }
 
 
     /**
      * Cardinal Spline: Weighted least squares spline with equidistant knots
      * 
-     * Returns Spline, and rms error
+     * Returns Spline, and rms error, with knots dt (input parameter) apart,
+     * and aligned to integer multiples of it. Knots cover the range within
+     * the bounds of x.
      */
-    pub fn cardinal_spline(&mut self, tb:f64, dt:f64, n:usize) -> Result<(&Self,f64)>{
-        let t: Vec<f64> = (0..n).map(|i|tb+(i as f64)*dt).collect();
+    pub fn cardinal_spline(&mut self, dt:f64) -> Result<(&Self,f64)>{
+        let m = self.x.len();
+        let tb = (self.x[0]/dt).ceil() * dt;
+        let te = (self.x[m-1]/dt).floor() * dt;
+        let n = ((te - tb)/dt).round() as usize;
+        if n == 0 { return Err("Cardinal spline spacing too large: select smaller interval".into()) };
+        let n = n + 2; 
+        let t: Vec<f64> = 
+            repeat(tb).take(K)
+            .chain(
+                repeat(dt).take(n).scan(tb, 
+                    |s, dx|{
+                        let t=*s; 
+                        *s+=dx; 
+                        Some(t)
+                    })
+            )
+            .chain(
+                repeat(te).take(K)
+            )
+            .collect();
+
         let (ierr, fp) = self.curfit(-1, Some(0.0),Some(t));
         if ierr<=0  {
-            Ok((self, fp.sqrt()/self.x.len() as f64))
+            Ok((self, fp))
         } else {
             Err(DierckxError::new(ierr).into())
         }
@@ -155,7 +178,7 @@ impl<const K:usize> Dierckx<K> {
     /**
      * Interpolating Spline
      * 
-     * Knots at x,y values, no error: fp = s = 0.0;
+     * Knots at x values, no error: fp = s = 0.0;
      */ 
     pub fn interpolating_spline(&mut self) -> Result<&Self> {
         let (ierr, _fp) = self.curfit(0, Some(0.0),None);
@@ -170,13 +193,12 @@ impl<const K:usize> Dierckx<K> {
      * Smoothing Spline
      * 
      * A spline with a minimal number of knots, with error less than the specifed rms value.
-     * If no rms value is given, an rms is guessed by setting it to 1% of the average y value.
      * Repeat fit with smaller rms value using `smooth_more`.
      */
-    pub fn smoothing_spline(&mut self, rms: Option<f64>) -> Result<(&Self,f64)>{
-        let (ierr, fp) = self.curfit(0, rms,None);
+    pub fn smoothing_spline(&mut self, rms: f64) -> Result<(&Self,f64)>{
+        let (ierr, fp) = self.curfit(0, Some(rms), None);
         if ierr<=0  {
-            Ok((self, fp.sqrt()/self.x.len() as f64))
+            Ok((self, fp))
         } else {
             Err(DierckxError::new(ierr).into())
         }
@@ -211,7 +233,7 @@ fn test_smoothing() -> Result<()> {
     let x = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
     let mut d = Dierckx::<3>::new(xi, yi, None);
     let r = d.interpolating_spline()?;
-    println!("{:.4?}", r.as_ref().values(x));
+    println!("{:.4?}", r.as_ref().values(&x));
 
 
     Ok(())
