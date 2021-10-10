@@ -1,3 +1,7 @@
+
+#![doc = include_str!("../README.md")]
+
+
 mod dierckx;
 
 use std::error;
@@ -66,7 +70,8 @@ impl<const K:usize> Spline<K>  {
 }
 
 
-pub struct Dierckx<const K:usize> {
+
+pub struct Spline1D<const K:usize> {
     // input values
     x: Vec<f64>,    // data x coordinates
     y: Vec<f64>,    // data y coordinates
@@ -80,7 +85,32 @@ pub struct Dierckx<const K:usize> {
 }
 
 
-impl<const K:usize> Dierckx<K> {
+/**
+ * 
+ Fits a smooth B-Spline 1D curve from (x,y) data
+ 
+ It is intended to fit a 1D Spline curve through a set of points,
+ given as x and y vectors, and with the x values in strictly ascending order.
+ As an example, the values could be temperature data, measured over a period of time,
+ with the temperature sensor having a limited accuaracy.
+ 
+ This is a Rust wrapper for Dierckx curfit Fortran subroutine, part
+ of Dierckx FITPACK library.
+ For the Foreign Function Interface to the Fortan subroutnine
+ see [curfit][dierckx::curfit_];
+ as you can see, it is not easy to use as it has 18(!) arguments, and requires quite a bit of reading and experimenting
+ to grasp.
+  
+ This wrapper encapsulates the internal data, and breaks up the curfit call in multiple steps.
+
+ */
+impl<const K:usize> Spline1D<K> {
+
+    /**
+     Constructor, with inputs x and y vectors, and an optional weights vectors.
+
+     The vectors should have equal length.
+     */
     pub fn new(x: Vec<f64>, y: Vec<f64>, weights: Option<Vec<f64>>) -> Self {
 
         let m = x.len();
@@ -99,7 +129,7 @@ impl<const K:usize> Dierckx<K> {
 
     }
 
-    fn curfit(&mut self, iopt:i32, e_rms_pct:Option<f64>, knots: Option<Vec<f64>>) ->  (i32, f64) {
+    fn curfit(&mut self, iopt:i32, noise_pct:Option<f64>, knots: Option<Vec<f64>>) ->  (i32, f64) {
         let k = K;
         let m = self.x.len();
         let nest = m * K  + 1;
@@ -107,7 +137,7 @@ impl<const K:usize> Dierckx<K> {
         let mut fp = 0.0;
         let mut ierr = 0;
         let y_rms:f64;
-        let s = if let Some(e) = e_rms_pct {
+        let s = if let Some(e) = noise_pct {
             y_rms = (self.y.iter().map(|y|y*y).sum::<f64>()/m as f64).sqrt();
             m as f64 * (e * y_rms / 100.0).powi(2)
         } else {
@@ -145,7 +175,7 @@ impl<const K:usize> Dierckx<K> {
      * and aligned to integer multiples of it. Knots cover the range within
      * the bounds of x.
      */
-    pub fn cardinal_spline(&mut self, dt:f64) -> Result<(&Self,f64)>{
+    pub fn cardinal_spline(mut self, dt:f64) -> Result<(Spline<K>,f64)>{
         let m = self.x.len();
         let tb = (self.x[0]/dt).ceil() * dt;
         let te = (self.x[m-1]/dt).floor() * dt;
@@ -169,21 +199,21 @@ impl<const K:usize> Dierckx<K> {
 
         let (ierr, fp) = self.curfit(-1, Some(0.0),Some(t));
         if ierr<=0  {
-            Ok((self, fp))
+            Ok((self.tc, fp))
         } else {
             Err(DierckxError::new(ierr).into())
         }
     }
 
     /**
-     * Interpolating Spline
-     * 
-     * Knots at x values, no error: fp = s = 0.0;
+     Interpolating Spline
+      
+      
      */ 
-    pub fn interpolating_spline(&mut self) -> Result<&Self> {
+    pub fn interpolating_spline(mut self) -> Result<Spline<K>> {
         let (ierr, _fp) = self.curfit(0, Some(0.0),None);
         if ierr<=0  {
-            Ok(self)
+            Ok(self.tc)
         } else {
             Err(DierckxError::new(ierr).into())
         }
@@ -219,22 +249,8 @@ impl<const K:usize> Dierckx<K> {
     }
 }
 
-impl<const K:usize> AsRef<Spline<K>> for Dierckx<K> {
+impl<const K:usize> AsRef<Spline<K>> for Spline1D<K> {
     fn as_ref(&self) -> &Spline<K> {
         &self.tc
     }
-}
-
-#[test]
-fn test_smoothing() -> Result<()> {
-
-    let xi = vec![0.0, 2.0, 4.0, 6.0, 8.0, 10.0];
-    let yi = xi.iter().map(|x|x*x).collect();
-    let x = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
-    let mut d = Dierckx::<3>::new(xi, yi, None);
-    let r = d.interpolating_spline()?;
-    println!("{:.4?}", r.as_ref().values(&x));
-
-
-    Ok(())
 }

@@ -1,6 +1,12 @@
-# dierckx
+# Dierckx' FITPACK B-Spline Fortran Library Wrapper
+
+Dierckx is a Fortran library for calculating one and two dimensional interpolating, least-squares, and smoothing (with automatic knot selection) B-Splines, created by Paul Dierckx. 
+The mathematical foundations and algorithms related to B-Splines are describe in his book [Curve and Surface Fitting with Splines](https://www.google.com/books/edition/Curve_and_Surface_Fitting_with_Splines/-RIQ3SR0sZMC?hl=en "Paul Dierckx, Curve and Surface Fitting with Splines, Oxford University Press, 1993").
+
+Both thin, and not-so-thin wrappers are included here.
 
 
+dG
 ```fortran
 curfit( iopt, m, x, y, w, xb, xe, k, s, nest, n, t, c, fp, wrk, lwrk, iwrk, ier) 
 ```
