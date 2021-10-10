@@ -1,12 +1,12 @@
 
-use dierckx::Spline1D;
+use dierckx::CurveFit;
 
 #[test]
 fn test_smoothing() -> Result<(), Box<dyn std::error::Error>> {
     use plotters::prelude::*;
     let (x,y) = xys();
 
-    let mut d = Spline1D::<3>::new(x.clone(), y.clone(), None);
+    let mut d = CurveFit::<3>::new(x.clone(), y.clone(), None);
     let (d, f) = d.smoothing_spline(1.25)?;
     println!("knots {:?}", d.tc.t);
     println!("number of knots: {}", d.tc.t.len());
@@ -24,7 +24,7 @@ fn test_smoothing() -> Result<(), Box<dyn std::error::Error>> {
     chart.configure_mesh().draw()?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE))?;
 
-    let y_s = d.as_ref().values(&x)?;
+    let y_s = d.as_ref().evaluate(&x)?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_s.iter().cloned()), &BLACK))?;
     chart.draw_series(d.tc.t.iter().cloned().zip(d.tc.c.iter().cloned()).map(|xy| Circle::new(xy, 3, RED.filled())))?;
 
@@ -38,7 +38,7 @@ fn test_cardinal() -> Result<(), Box<dyn std::error::Error>> {
     use plotters::prelude::*;
     let (x,y) = xys();
 
-    let d = Spline1D::<3>::new(x.clone(), y.clone(), None);
+    let d = CurveFit::<3>::new(x.clone(), y.clone(), None);
     let (tc, f) = d.cardinal_spline(10.0)?;
     println!("knots {:?}", tc.t);
     println!("number of knots: {}", tc.t.len());
@@ -56,7 +56,7 @@ fn test_cardinal() -> Result<(), Box<dyn std::error::Error>> {
     chart.configure_mesh().draw()?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE))?;
 
-    let y_s = tc.values(&x)?;
+    let y_s = tc.evaluate(&x)?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_s.iter().cloned()), &BLACK))?;
     chart.draw_series(tc.t.iter().cloned().zip(tc.c.iter().cloned()).map(|xy| Circle::new(xy, 3, RED.filled())))?;
 
@@ -80,11 +80,10 @@ fn test_interpolating_spline() -> Result<(), Box<dyn std::error::Error>> {
     use plotters::prelude::*;
 
 
-
     let x: Vec<f64> = (0..=180).map(|i|(i as f64).to_radians()).collect();
-    let y: Vec<f64> = x.iter().map(|x|x.sin().powi(6)).collect();
+    let y: Vec<f64> = x.iter().map(|x|x.sin().powi(8)).collect();
     let x_data: Vec<f64> = (0..=180).step_by(20).map(|i|(i as f64).to_radians()).collect();
-    let y_data: Vec<f64> = x_data.iter().map(|x|x.sin().powi(6)).collect();
+    let y_data: Vec<f64> = x_data.iter().map(|x|x.sin().powi(8)).collect();
 
     let root = BitMapBackend::new("interpolating_spline.png", (2000, 1000)).into_drawing_area();
     root.fill(&WHITE)?;
@@ -94,9 +93,9 @@ fn test_interpolating_spline() -> Result<(), Box<dyn std::error::Error>> {
         .build_cartesian_2d(0f64..180f64.to_radians(), 0.0..1.0)?;
     chart.configure_mesh().draw()?;
     chart.draw_series(x_data.iter().cloned().zip(y_data.iter().cloned()).map(|xy| Circle::new(xy, 5, RED.filled())))?;
-    let d = Spline1D::<3>::new(x_data, y_data, None);
-    let y_fit = d.interpolating_spline()?.values(&x)?;
-    chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_fit.iter().cloned()), &BLUE))?;
+    let d = CurveFit::<3>::new(x_data, y_data, None);
+    let y_fit = d.interpolating_spline()?.evaluate(&x)?;
+    chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_fit.iter().cloned()), &HSLColor(0.5, 1.0, 0.5)))?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLACK))?;
 
     /*

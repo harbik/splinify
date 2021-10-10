@@ -2,78 +2,15 @@
 #![doc = include_str!("../README.md")]
 
 
-/// Foreign Function Interface definitions
-mod dierckx;
-
-pub mod curfit;
-pub use curfit::*;
 
 use std::error;
-use std::fmt;
-use crate::dierckx::{splev_};
+use std::iter::repeat;
+use crate::dierckx::{curfit_};
+use super::{Spline, DierckxError};
 
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
-#[derive(Debug, Clone)]
-pub struct DierckxError{
-    pub ierr: i32,
-}
-
-impl DierckxError {
-    fn new(ierr: i32) -> Self { Self { ierr } }
-}
-
-impl fmt::Display for DierckxError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.ierr {
-           -2 => write!(f, "normal return for weighted least squares spline, fp upper bound for smoothing factor"),
-           -1 => write!(f, "normal return for interpolating spline"),
-            0 => write!(f, "normal return"),
-            1 => write!(f, "error, out of storage space; nest too small (m/2); or s too small"),
-            2 => write!(f, "error, smoothing spline error, s too small"),
-            3 => write!(f, "error, reached iteration limit (20) for finding smoothing spline; s too small"),
-           10 => write!(f, "error, invalid input data; check if -1<=iopt<=1, 1<=k<=5, m>k, nest>2*k+2, w(i)>0,i=1,2,...,m xb<=x(1)<x(2)<...<x(m)<=xe, lwrk>=(k+1)*m+nest*(7+3*k)"),
-            _ => write!(f, "unknown error"),
-        }
-    }
-}
-
-
-impl error::Error for DierckxError {}
-
-
-/**
- * General K-degree B-Spline Knot/Coefficient Representation
- */
-pub struct Spline<const K:usize> {
-    pub t: Vec<f64>,    // Knot values
-    pub c: Vec<f64>,    // b-Spline coefficients
-}
-
-impl<const K:usize> Spline<K>  {
-    pub fn new(t: Vec<f64>, c: Vec<f64>) -> Self {
-        assert!(t.len()==c.len());
-        Self {t, c}
-    }
-    
-    pub fn evaluate(&self, x: &Vec<f64>) -> Result<Vec<f64>> {
-        let k = K;
-        let m = x.len();
-        let mut y = vec![0.0; m];
-        let n = self.t.len();
-        let mut ierr = 0;
-        unsafe {splev_(self.t.as_ptr(), &n, self.c.as_ptr(), &k, x.as_ptr(), y.as_mut_ptr(), &m, &mut ierr) }
-        if ierr<=0 {
-            Ok(y)
-        } else {
-            Err(DierckxError::new(ierr).into())
-        }
-    }
-}
-
-
-/*
 
 pub struct CurveFit<const K:usize> {
     // input values
@@ -258,5 +195,3 @@ impl<const K:usize> AsRef<Spline<K>> for CurveFit<K> {
         &self.tc
     }
 }
-
- */
