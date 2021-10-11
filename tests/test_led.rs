@@ -1,6 +1,5 @@
 
 use dierckx::{CubicCurveFit, CurveFit, ConstrainedSpline, Result};
-use nalgebra::{Const, DMatrix, DVector, Dynamic, OMatrix};
 
 #[test]
 fn test_smoothing() -> Result<()> {
@@ -115,14 +114,17 @@ fn test_interpolating_spline() -> Result<()> {
 #[test]
 fn constrained_cardinal_spline() -> Result<()> {
     use plotters::prelude::*;
-    let (u,y) = xys();
-    let u = DVector::<f64>::from_vec(u);
-    let xn = OMatrix::<f64, Const<1>, Dynamic>::from_vec(y);
-    let xb = OMatrix::<f64, Dynamic, Const<1>>::from_vec(vec![y[0], 0.0, 0.0]); // first and second derivatives 0.0
-    let xe = OMatrix::<f64, Dynamic, Const<1>>::from_vec(vec![y[y.len()-1], 0.0, 0.0]);
-    let cs = ConstrainedSpline::<3,1>::new(u, xn, xb, xe);
+    let (x,y) = xys();
+    let xb = vec![y[0], 0.00]; // first and second derivatives 0.0
+    let xe = vec![y[y.len()-1], 0.0];
+    //let xb = vec![0.0, 0.0, 0.0]; // first and second derivatives 0.0
+    //let xe = vec![0.0, 0.0, 0.0];
 
+    ////////
+    let cs = ConstrainedSpline::<3,1>::new(x.clone(), y.clone(), xb, xe)?;
     let (tc, f) = cs.cardinal_spline(10.0)?;
+    ////////
+     
     println!("knots {:?}", tc.t);
     println!("number of knots: {}", tc.t.len());
     println!("fp: {:?}", f);
@@ -138,7 +140,9 @@ fn constrained_cardinal_spline() -> Result<()> {
     chart.configure_mesh().draw()?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE))?;
 
+    ////////
     let y_s = tc.evaluate(&x)?;
+    ////////
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_s.iter().cloned()), &BLACK))?;
     chart.draw_series(tc.t.iter().cloned().zip(tc.c.iter().cloned()).map(|xy| Circle::new(xy, 3, RED.filled())))?;
 

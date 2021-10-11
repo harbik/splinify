@@ -95,8 +95,8 @@ extern {
         t: *mut f64,    // Array of dimension of at least nest. For iopt=-1 array of knots to be used for lsq spline
         nc: &usize,     // actual size of array c: nest * idim
         c: *mut f64,    // coefficients of the b-spline representation, with size nc = nest * idim
-        cp:*mut f64,    // array at least 2 * (k+1) * idim; spline representation of end points, mainly for internal use
         np: &usize,     // size of cp: 2 * (k+1) * idim
+        cp:*mut f64,    // array at least 2 * (k+1) * idim; spline representation of end points, mainly for internal use
         fp: &mut f64,   // Weighted sum of the squared residuals of the spline approximation.
         wrk: *mut f64,  // Float working array
         lwrk: &usize,   // m*(k+1)+nest*(6+idim+3*k)
