@@ -1,15 +1,11 @@
-
-#![doc = include_str!("../README.md")]
-
-
-
-use std::error;
 use std::iter::repeat;
 use crate::dierckx::{curfit_};
 use super::{Spline, DierckxError};
+use crate::Result;
 
 
-type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
+pub type CubicCurveFit = CurveFit::<3>;
+pub type QuinticCurveFit = CurveFit::<5>;
 
 
 pub struct CurveFit<const K:usize> {
@@ -52,22 +48,31 @@ impl<const K:usize> CurveFit<K> {
 
      The vectors should have equal length.
      */
-    pub fn new(x: Vec<f64>, y: Vec<f64>, weights: Option<Vec<f64>>) -> Self {
+    pub fn new(x: Vec<f64>, y: Vec<f64>) -> Self {
 
         let m = x.len();
-        let w = weights.unwrap_or(vec![1.0; m]);
+        let w = vec![1.0; m];
         assert!(y.len()==m);
         assert!(w.len()==y.len());
 
         let nest = m * K  + 1;
         let tc = Spline::<K>::new(vec![0.0; nest], vec![0.0; nest]);
+        let iwrk = vec![0i32; nest];
 
         let lwrk = m * (K + 1) + nest * (7 + 3 * K);
         let wrk = vec![0f64; lwrk];
-        let iwrk = vec![0i32; lwrk];
 
         Self { x, y, w, tc, wrk, iwrk}
 
+    }
+
+    pub fn set_weights(&mut self, weights:Vec<f64>) -> Result<&mut Self> {
+        if weights.len() == self.x.len() {
+            self.w = weights;
+            Ok(self)
+        } else {
+            Err("Wrong size for weights array".into())
+        }
     }
 
     fn curfit(&mut self, iopt:i32, noise_pct:Option<f64>, knots: Option<Vec<f64>>) ->  (i32, f64) {

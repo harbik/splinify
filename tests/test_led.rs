@@ -1,12 +1,13 @@
 
-use dierckx::CurveFit;
+use dierckx::{CubicCurveFit, CurveFit, ConstrainedSpline, Result};
+use nalgebra::{Const, DMatrix, DVector, Dynamic, OMatrix};
 
 #[test]
-fn test_smoothing() -> Result<(), Box<dyn std::error::Error>> {
+fn test_smoothing() -> Result<()> {
     use plotters::prelude::*;
     let (x,y) = xys();
 
-    let mut d = CurveFit::<3>::new(x.clone(), y.clone(), None);
+    let mut d = CurveFit::<3>::new(x.clone(), y.clone());
     let (d, f) = d.smoothing_spline(1.25)?;
     println!("knots {:?}", d.tc.t);
     println!("number of knots: {}", d.tc.t.len());
@@ -34,11 +35,11 @@ fn test_smoothing() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 #[test]
-fn test_cardinal() -> Result<(), Box<dyn std::error::Error>> {
+fn test_cardinal() -> Result<()> {
     use plotters::prelude::*;
     let (x,y) = xys();
 
-    let d = CurveFit::<3>::new(x.clone(), y.clone(), None);
+    let d = CubicCurveFit::new(x.clone(), y.clone());
     let (tc, f) = d.cardinal_spline(10.0)?;
     println!("knots {:?}", tc.t);
     println!("number of knots: {}", tc.t.len());
@@ -76,7 +77,7 @@ fn test_iter(){
 }
 
 #[test]
-fn test_interpolating_spline() -> Result<(), Box<dyn std::error::Error>> {
+fn test_interpolating_spline() -> Result<()> {
     use plotters::prelude::*;
 
 
@@ -93,7 +94,7 @@ fn test_interpolating_spline() -> Result<(), Box<dyn std::error::Error>> {
         .build_cartesian_2d(0f64..180f64.to_radians(), 0.0..1.0)?;
     chart.configure_mesh().draw()?;
     chart.draw_series(x_data.iter().cloned().zip(y_data.iter().cloned()).map(|xy| Circle::new(xy, 5, RED.filled())))?;
-    let d = CurveFit::<3>::new(x_data, y_data, None);
+    let d = CurveFit::<3>::new(x_data, y_data);
     let y_fit = d.interpolating_spline()?.evaluate(&x)?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_fit.iter().cloned()), &HSLColor(0.5, 1.0, 0.5)))?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLACK))?;
@@ -106,6 +107,42 @@ fn test_interpolating_spline() -> Result<(), Box<dyn std::error::Error>> {
 
     root.present()?;
 
+
+    Ok(())
+}
+
+
+#[test]
+fn constrained_cardinal_spline() -> Result<()> {
+    use plotters::prelude::*;
+    let (u,y) = xys();
+    let u = DVector::<f64>::from_vec(u);
+    let xn = OMatrix::<f64, Const<1>, Dynamic>::from_vec(y);
+    let xb = OMatrix::<f64, Dynamic, Const<1>>::from_vec(vec![y[0], 0.0, 0.0]); // first and second derivatives 0.0
+    let xe = OMatrix::<f64, Dynamic, Const<1>>::from_vec(vec![y[y.len()-1], 0.0, 0.0]);
+    let cs = ConstrainedSpline::<3,1>::new(u, xn, xb, xe);
+
+    let (tc, f) = cs.cardinal_spline(10.0)?;
+    println!("knots {:?}", tc.t);
+    println!("number of knots: {}", tc.t.len());
+    println!("fp: {:?}", f);
+
+    let ymax = y.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
+    
+    let root = BitMapBackend::new("led_card_constrained_spline.png", (2000, 1000)).into_drawing_area();
+    root.fill(&WHITE)?;
+    let mut chart = ChartBuilder::on(&root)
+        .margin(50)
+        .caption("Constrained Cardinal Spline", ("sans-serif",24))
+        .build_cartesian_2d(380f64..780f64, -ymax/5.0..ymax)?;
+    chart.configure_mesh().draw()?;
+    chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE))?;
+
+    let y_s = tc.evaluate(&x)?;
+    chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_s.iter().cloned()), &BLACK))?;
+    chart.draw_series(tc.t.iter().cloned().zip(tc.c.iter().cloned()).map(|xy| Circle::new(xy, 3, RED.filled())))?;
+
+    root.present()?;
 
     Ok(())
 }

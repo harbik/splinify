@@ -8,12 +8,15 @@ mod dierckx;
 pub mod curfit;
 pub use curfit::*;
 
+pub mod concur;
+pub use concur::*;
+
 use std::error;
 use std::fmt;
 use crate::dierckx::{splev_};
 
 
-type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
+pub type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 #[derive(Debug, Clone)]
 pub struct DierckxError{
@@ -44,7 +47,7 @@ impl error::Error for DierckxError {}
 
 
 /**
- * General K-degree B-Spline Knot/Coefficient Representation
+ * General B-Spline Curve Knot/Coefficient Representation
  */
 pub struct Spline<const K:usize> {
     pub t: Vec<f64>,    // Knot values

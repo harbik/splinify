@@ -69,5 +69,39 @@ extern {
         m: &usize,      // lenght of x and y
         ier: &mut i32,  // ier = 0 : normal return;  ier =10 : invalid input data : restrictions:  m >= 1, t(k+1) <= x(i) <= x(i+1) <= t(n-k) , i=1,2,...,m-1
     ); 
+
+    #[allow(dead_code)]
+    pub(super) fn concur_(
+        iopt: &i32,     // iopt -1: Least-squares spline fixed knots, 0,1: smoothing spline. iopt=0 and s=0: interpolating spline
+        idim: &usize,   // dimension of the curve 0 < idim < 11; e.g. 3: trajectory of a fly flying in your office
+        m: &usize,      // Number of data points supplied
+        u: *const f64,  // Array of parameter values (e.g. pathlength)
+        mx: &usize,     // Array size of data points, idim * m
+        x: *const f64,  // Datapoints eg [x0, y0, z0, ... x1, y1.., z1, ..]
+        xx: *mut f64,   // mx sized array, used as working space.
+        w: *const f64,  // Array weights (at least m values)
+        ib: &usize,     // number of derivative constraints for the curve at the begin point: 0<=ib<=(k+1)/2 
+                        // choose 0 for only endpoint value (x) , 1 to add first derivative [x, dx/du], 2: to add second [x, dx/du, d2x/du2]
+        db: *const f64, // Array with the actural derivative begin point constraints
+        nb: &usize,     // Size of db: idim*ib
+        ie: &usize,     // number of derivative constraints for the curve at the end point: 0<=ib<=(k+1)/2 
+                        // choose 0 for only endpoint value (x) , 1 to add first derivative [x, dx/du], 2: to add second [x, dx/du, d2x/du2]
+        de: *const f64, // Array with the actural derivative begin point constraints
+        ne: &usize,     // Size of db: idim*ib
+        k: &usize,      // Degree of the spline, Cubic = 3
+        s: &f64,        // Smoothing factor to be used if iopt >= 0
+        nest: &usize,   // nest=m+k+1+max(0,ib-1)+max(0,ie-1),
+        n: &mut usize,  // Number of knots returned. For iopt=-1 value needs to pe specified on entry
+        t: *mut f64,    // Array of dimension of at least nest. For iopt=-1 array of knots to be used for lsq spline
+        nc: &usize,     // actual size of array c: nest * idim
+        c: *mut f64,    // coefficients of the b-spline representation, with size nc = nest * idim
+        cp:*mut f64,    // array at least 2 * (k+1) * idim; spline representation of end points, mainly for internal use
+        np: &usize,     // size of cp: 2 * (k+1) * idim
+        fp: &mut f64,   // Weighted sum of the squared residuals of the spline approximation.
+        wrk: *mut f64,  // Float working array
+        lwrk: &usize,   // m*(k+1)+nest*(6+idim+3*k)
+        iwrk: *mut i32, // Integer working array
+        ier: &mut i32   // Error flag.
+    );
 }
 
