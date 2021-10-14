@@ -4,11 +4,11 @@ use super::{Spline, DierckxError};
 use crate::Result;
 
 
-pub type CubicCurveFit = CurveFit::<3>;
-pub type QuinticCurveFit = CurveFit::<5>;
+pub type CubicCurveFit = XYCurveSplineFit::<3>;
+pub type QuinticCurveFit = XYCurveSplineFit::<5>;
 
 
-pub struct CurveFit<const K:usize> {
+pub struct XYCurveSplineFit<const K:usize> {
     // input values
     x: Vec<f64>,    // data x coordinates
     y: Vec<f64>,    // data y coordinates
@@ -41,7 +41,7 @@ pub struct CurveFit<const K:usize> {
  This wrapper encapsulates the internal data, and breaks up the curfit call in multiple steps.
 
  */
-impl<const K:usize> CurveFit<K> {
+impl<const K:usize> XYCurveSplineFit<K> {
 
     /**
      Constructor, with inputs x and y vectors, and an optional weights vectors.
@@ -71,7 +71,7 @@ impl<const K:usize> CurveFit<K> {
             self.w = weights;
             Ok(self)
         } else {
-            Err("Wrong size for weights array".into())
+            Err(DierckxError(203).into())
         }
     }
 
@@ -126,7 +126,7 @@ impl<const K:usize> CurveFit<K> {
         let tb = (self.x[0]/dt).ceil() * dt;
         let te = (self.x[m-1]/dt).floor() * dt;
         let n = ((te - tb)/dt).round() as usize;
-        if n == 0 { return Err("Cardinal spline spacing too large: select smaller interval".into()) };
+        if n == 0 { return Err(DierckxError(205).into())};
         let n = n + 2; 
         let t: Vec<f64> = 
             repeat(tb).take(K)
@@ -153,8 +153,6 @@ impl<const K:usize> CurveFit<K> {
 
     /**
      Interpolating Spline
-      
-      
      */ 
     pub fn interpolating_spline(mut self) -> Result<Spline<K>> {
         let (ierr, _fp) = self.curfit(0, Some(0.0),None);
@@ -176,7 +174,7 @@ impl<const K:usize> CurveFit<K> {
         if ierr<=0  {
             Ok((self, fp))
         } else {
-            Err(DierckxError::new(ierr).into())
+            Err(DierckxError(ierr).into())
         }
     }
 
@@ -190,12 +188,12 @@ impl<const K:usize> CurveFit<K> {
         if ierr<=0  {
             Ok((self, fp.sqrt()/self.x.len() as f64))
         } else {
-            Err(DierckxError::new(ierr).into())
+            Err(DierckxError(ierr).into())
         }
     }
 }
 
-impl<const K:usize> AsRef<Spline<K>> for CurveFit<K> {
+impl<const K:usize> AsRef<Spline<K>> for XYCurveSplineFit<K> {
     fn as_ref(&self) -> &Spline<K> {
         &self.tc
     }

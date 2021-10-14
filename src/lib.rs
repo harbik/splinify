@@ -19,24 +19,32 @@ use crate::dierckx::{splev_};
 pub type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 #[derive(Debug, Clone)]
-pub struct DierckxError{
-    pub ierr: i32,
-}
+pub struct DierckxError(i32);
 
 impl DierckxError {
-    fn new(ierr: i32) -> Self { Self { ierr } }
+    fn new(ierr: i32) -> Self { Self(ierr) }
 }
 
 impl fmt::Display for DierckxError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self.ierr {
+        match self.0 {
+            // Dierckx
            -2 => write!(f, "normal return for weighted least squares spline, fp upper bound for smoothing factor"),
            -1 => write!(f, "normal return for interpolating spline"),
             0 => write!(f, "normal return"),
-            1 => write!(f, "error, out of storage space; nest too small (m/2); or s too small"),
-            2 => write!(f, "error, smoothing spline error, s too small"),
-            3 => write!(f, "error, reached iteration limit (20) for finding smoothing spline; s too small"),
-           10 => write!(f, "error, invalid input data; check if -1<=iopt<=1, 1<=k<=5, m>k, nest>2*k+2, w(i)>0,i=1,2,...,m xb<=x(1)<x(2)<...<x(m)<=xe, lwrk>=(k+1)*m+nest*(7+3*k)"),
+            1 => write!(f, "out of storage space; nest too small (m/2); or s too small"),
+            2 => write!(f, "smoothing spline error, s too small"),
+            3 => write!(f, "reached iteration limit (20) for finding smoothing spline; s too small"),
+           10 => write!(f, "invalid input data; check if -1<=iopt<=1, 1<=k<=5, m>k, nest>2*k+2, w(i)>0,i=1,2,...,m xb<=x(1)<x(2)<...<x(m)<=xe, lwrk>=(k+1)*m+nest*(7+3*k)"),
+           // this library
+           200 => write!(f, "N should be between 1 and 10"),
+           201 => write!(f, "need at least 2 parameter values"),
+           202 => write!(f, "incorrect size of coordinate array xn"),
+           203 => write!(f, "wrong size for weights array"),
+           204 => write!(f, "too many derivative contraints supplied"),
+           205 => write!(f, "cardinal spline spacing too large: select smaller interval"),
+           206 => write!(f, "smoothing_spline not converged"),
+           207 => write!(f, "failed to initialize smoothing_spline"),
             _ => write!(f, "unknown error"),
         }
     }
@@ -49,6 +57,7 @@ impl error::Error for DierckxError {}
 /**
  * General B-Spline Curve Knot/Coefficient Representation
  */
+#[derive(Clone)]
 pub struct Spline<const K:usize> {
     pub t: Vec<f64>,    // Knot values
     pub c: Vec<f64>,    // b-Spline coefficients

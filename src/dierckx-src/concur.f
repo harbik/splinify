@@ -328,11 +328,12 @@ c  are invalid, control is immediately repassed to the calling program.
       if(lwrk.lt.lwest) go to 90
       ier = 21
       if(w(1).le.0.) go to 90
+      ier = 22
       do 10 i=2,m
          if(u(i-1).ge.u(i) .or. w(i).le.0.) go to 90
   10  continue
       if(iopt.ge.0) go to 30
-      ier = 22
+      ier = 23
       if(n.lt.nmin .or. n.gt.nest) go to 90
       j = n
       do 20 i=1,k1
@@ -344,6 +345,7 @@ c  are invalid, control is immediately repassed to the calling program.
       if(ier) 90,40,90
   30  if(s.lt.0.) go to 90
       nmax = m+k1+ib1+ie1
+      ier = 24
       if(s.eq.0. .and. nest.lt.nmax) go to 90
       ier = 0
       if(iopt.gt.0) go to 70

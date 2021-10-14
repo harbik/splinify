@@ -1,16 +1,35 @@
 
-use dierckx::{CubicCurveFit, CurveFit, ConstrainedSpline, Result};
+use dierckx::{ParametricCurveSplineFit, Result};
 
 #[test]
 fn test_smoothing() -> Result<()> {
     use plotters::prelude::*;
     let (x,y) = xys();
 
-    let mut d = CurveFit::<3>::new(x.clone(), y.clone());
-    let (d, f) = d.smoothing_spline(1.25)?;
-    println!("knots {:?}", d.tc.t);
-    println!("number of knots: {}", d.tc.t.len());
-    println!("fp: {:?}", f);
+    let conv_test = |k:usize, dk:usize, rms:f64, drms:f64| -> bool {
+        /* 
+        if drms/rms < 0.1 {
+            return true
+        } else {
+            return false
+        }
+        */
+        println!("{} {} {} {}", k, dk, rms, drms);
+        if k>40  || drms<0.00001 {
+            return true
+        } else {
+            return false
+        }
+    };
+
+    let d = 
+    ParametricCurveSplineFit::<3,1>::new(x.clone(), y.clone())?
+        .begin_constraints([ [y[0]], [0.0], [0.0]])?
+        .end_constraints([ [y[y.len()-1]], [0.0], [0.0] ])?
+       // .smoothing_spline(0.001, |k,dk, rms, drms| if drms/rms < 0.1 { return true } else { return false }, None, None)?;
+        .smoothing_spline(0.001, conv_test, None, None)?;
+    println!("knots {:?}", d.t);
+    println!("number of knots: {}", d.t.len());
 
 
     let ymax = y.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
@@ -24,56 +43,15 @@ fn test_smoothing() -> Result<()> {
     chart.configure_mesh().draw()?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE))?;
 
-    let y_s = d.as_ref().evaluate(&x)?;
+    let y_s = d.evaluate(&x)?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_s.iter().cloned()), &BLACK))?;
-    chart.draw_series(d.tc.t.iter().cloned().zip(d.tc.c.iter().cloned()).map(|xy| Circle::new(xy, 3, RED.filled())))?;
+    chart.draw_series(d.t.iter().cloned().zip(d.c.iter().cloned()).map(|xy| Circle::new(xy, 3, RED.filled())))?;
 
     root.present()?;
 
     Ok(())
 }
 
-#[test]
-fn test_cardinal() -> Result<()> {
-    use plotters::prelude::*;
-    let (x,y) = xys();
-
-    let d = CubicCurveFit::new(x.clone(), y.clone());
-    let (tc, f) = d.cardinal_spline(10.0)?;
-    println!("knots {:?}", tc.t);
-    println!("number of knots: {}", tc.t.len());
-    println!("fp: {:?}", f);
-
-
-    let ymax = y.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
-    
-    let root = BitMapBackend::new("led_card_spline.png", (2000, 1000)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root)
-        .margin(50)
-        .caption("Cardinal Spline", ("sans-serif",24))
-        .build_cartesian_2d(380f64..780f64, -ymax/5.0..ymax)?;
-    chart.configure_mesh().draw()?;
-    chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE))?;
-
-    let y_s = tc.evaluate(&x)?;
-    chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_s.iter().cloned()), &BLACK))?;
-    chart.draw_series(tc.t.iter().cloned().zip(tc.c.iter().cloned()).map(|xy| Circle::new(xy, 3, RED.filled())))?;
-
-    root.present()?;
-
-    Ok(())
-}
-
-#[test]
-fn test_iter(){
-    use std::iter::repeat;
-    let v:Vec<f64> = repeat(5.0).take(81).scan(380.0, |s, dx| {let t=*s; *s+=dx; Some(t)}).collect();
-    println!("{:?}", v);
-
-    let w:Vec<f64> = repeat(5.0).scan(380.0, |s, dx| {let t=*s; *s+=dx; if t>780.0 {None } else {Some(t)}}).collect();
-    println!("{:?}", w);
-}
 
 #[test]
 fn test_interpolating_spline() -> Result<()> {
@@ -93,17 +71,16 @@ fn test_interpolating_spline() -> Result<()> {
         .build_cartesian_2d(0f64..180f64.to_radians(), 0.0..1.0)?;
     chart.configure_mesh().draw()?;
     chart.draw_series(x_data.iter().cloned().zip(y_data.iter().cloned()).map(|xy| Circle::new(xy, 5, RED.filled())))?;
-    let d = CurveFit::<3>::new(x_data, y_data);
-    let y_fit = d.interpolating_spline()?.evaluate(&x)?;
+    let y_fit =
+        ParametricCurveSplineFit::<3,1>::new(x_data, y_data.clone())?
+            .begin_constraints([ [y_data[0]], [0.0], [0.0]])?
+            .end_constraints([ [y_data[y_data.len()-1]], [0.0], [0.0] ])?
+            .interpolating_spline()?
+            .evaluate(&x)?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_fit.iter().cloned()), &HSLColor(0.5, 1.0, 0.5)))?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLACK))?;
 
-    /*
-    let y_s = tc.values(&x)?;
-    chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_s.iter().cloned()), &BLACK))?;
-    chart.draw_series(tc.t.iter().cloned().zip(tc.c.iter().cloned()).map(|xy| Circle::new(xy, 3, RED.filled())))?;
-     */
-
+   
     root.present()?;
 
 
@@ -115,28 +92,25 @@ fn test_interpolating_spline() -> Result<()> {
 fn constrained_cardinal_spline() -> Result<()> {
     use plotters::prelude::*;
     let (x,y) = xys();
-    let xb = vec![y[0], 0.00]; // first and second derivatives 0.0
-    let xe = vec![y[y.len()-1], 0.0];
-    //let xb = vec![0.0, 0.0, 0.0]; // first and second derivatives 0.0
-    //let xe = vec![0.0, 0.0, 0.0];
 
-    ////////
-    let cs = ConstrainedSpline::<3,1>::new(x.clone(), y.clone(), xb, xe)?;
-    let (tc, f) = cs.cardinal_spline(10.0)?;
-    ////////
+    let cs = ParametricCurveSplineFit::<5,1>::new(x.clone(), y.clone())?;
+    let (tc, f) = cs
+       .begin_constraints([[y[0]],[0.0], [0.0]])?
+       .end_constraints([[y[y.len()-1]], [0.0], [0.0]])?
+       .cardinal_spline(5.0)?;
      
+    let y_max = y.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
     println!("knots {:?}", tc.t);
     println!("number of knots: {}", tc.t.len());
-    println!("fp: {:?}", f);
+    println!("fp: {:?}", f/y_max);
 
-    let ymax = y.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
     
     let root = BitMapBackend::new("led_card_constrained_spline.png", (2000, 1000)).into_drawing_area();
     root.fill(&WHITE)?;
     let mut chart = ChartBuilder::on(&root)
         .margin(50)
         .caption("Constrained Cardinal Spline", ("sans-serif",24))
-        .build_cartesian_2d(380f64..780f64, -ymax/5.0..ymax)?;
+        .build_cartesian_2d(380f64..780f64, -y_max/5.0..y_max)?;
     chart.configure_mesh().draw()?;
     chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLUE))?;
 
