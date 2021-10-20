@@ -1,218 +1,185 @@
 # Dierckx' FITPACK B-Spline Fortran Library Wrapper
 
-Dierckx is a Fortran library for calculating one and two dimensional interpolating, least-squares, and smoothing (with automatic knot selection) B-Splines, created by Paul Dierckx. 
-The mathematical foundations and algorithms related to B-Splines are describe in his book [Curve and Surface Fitting with Splines](https://www.google.com/books/edition/Curve_and_Surface_Fitting_with_Splines/-RIQ3SR0sZMC?hl=en "Paul Dierckx, Curve and Surface Fitting with Splines, Oxford University Press, 1993").
+Dierckx is a Fortran library for fitting curve and surface *B-Splines* to sets of data points.  It was written by Paul
+Dierckx in the mid 1980s, and it is still the most advanced general B-spline fitting library today.
+It is based on a solid mathematical foundation, implements many advanced algorithms, as described in detail in Paul Dierckx' book:
+[Curve and Surface Fitting with Splines](https://www.google.com/books/edition/Curve_and_Surface_Fitting_with_Splines/-RIQ3SR0sZMC?hl=en "Paul Dierckx, Curve and Surface Fitting with Splines, Oxford University Press, 1993").
 
-Both thin, and not-so-thin wrappers are included here.
+With all its features, and being programmed in a somewhat limited language (at least as concerned to API design), 
+Dierckx' FITPACK is difficult to use:
+for example, its `concur` subroutine has 28 numerical arguments!
+
+This aim of this library is to make the Dierckx library more accessible from Rust,
+by implementing a foreign function interface,
+and by defining and implementing high level *Rustacean* application interface.
+
+Although Dierckx' Fortran library covers fitting a spline evaluation methods for Univariate and Bivariate B-Splines,
+currently this library only covers **univariate, or single input-parameter fitting methods**.
 
 
-dG
-```fortran
-curfit( iopt, m, x, y, w, xb, xe, k, s, nest, n, t, c, fp, wrk, lwrk, iwrk, ier) 
+# Usage
+
+This functionality of this library is split in two crates:
+
+- the first crate is `dierckx-sys` containing the foreign function Rust interfaces, and Dierckx' Fortran source files,
+- and the second is this crate, `dierckx`, which implements the higher level Rust object models, and associated methods.
+
+As this crate is a Fortran wrapper, you need a Fortran compiler on your system to use it:
+in specific, at the moment, it requires the Gnu Fortran **GFortran** to be installed.
+See [Installing GFortran](https://fortran-lang.org/learn/os_setup/install_gfortran) how to do this on your machine.
+
+Having to install a Fortran compiler is a big restriction, so I recommend not using it as a dependency in big projects.
+
+To use this library add this to your `Cargo.toml` file:
+
+```
+[dependencies]
+dierckx = "0.0.1"
 ```
 
-Given the set of data points (x(i),y(i)) and the set of positive numbers w(i),i=1,2,...,m, subroutine curfit determines a smooth spline approximation of degree k on the interval xb <= x <= xe. 
+# Examples
 
-- iopt = -1  
 
-If iopt=-1 curfit calculates the weighted least-squares spline according to a given set of knots. 
+```
 
-- iopt = 0
+```
 
-If iopt>=0 the number of knots of the spline s(x) and the position t(j),j=1,2,...,n is chosen automatically by the routine. 
-The smoothness of s(x) is then achieved by minimizing the discontinuity jumps of the k-th derivative of s(x) at the knots t(j),j=k+2,k+3,..., n-k-1. 
-The amount of smoothness is determined by the condition that 
+<div style="text-align:center;">
+<img src="https://www.harbik.com/img/dierckx/led26.png" style="width:80%;"/>
+</div>
+
+
+# B-Splines
+
+Some use for B-Spline representations are:
+- **interpolation** in one or more dimensions, 
+    for example when data is needed between a set of measured data points to make line plots, 
+- calculate **derivatives** for measured data,
+such as the momentary speed and acceleration of a car from a set of time and distance values,
+- **smoothing**, to calculate a smooth line or shape through noisy data,
+for example to smooth the hand written script on a tablet.
+
+B-splines --or basis splines-- are polynomials, not fitted to to the whole set of data, but fitted to segments of the
+data set, and connecting at the ends.
+The collection of all the polynomials for all the segments is a curve (or surface) B-Spline representation.
+Besides that the polynomials are all connected, to form a continuous line, they are also constructed to have the same
+first, second, or higher (depending on the degrees polynomial) derivatives, to form smooth curves and surfaces.
+
+Here is a quote from [Wikipedia](https://en.wikipedia.org/wiki/B-spline) with regard to B-Splines:
+> A spline function of order n is a piecewise polynomial function of degree n−1 in a variable x. 
+> The places where the pieces meet are known as knots. 
+
+B-Splines can be used to:
+- fit curves, in which case they are called *Univariate B-Splines*, to fit one or more outputs to a single input,
+- or can be used to fit surfaces, called *Bivariate B-Splines*, used to fit one or more outputs to two inputs,
+- or can be used to fit "volumes" using *Multivariate B-Splines*, by fitting one or more outputs to three or more inputs.
+
+For example, the speed of a car as function of time could be described by a univariate spline, and weather-forecast
+barometric air-pressure distribution can be described by a bivariate spline.
+An example of a multivariate B-Spline representation would be a spline fit of 3D-temperature measurements in a room.
+
+
+
+
+# Curve Fitting 
+
+This wrapper provides various interface objects to Dierckx' library:
+
+- [`CurveSplineFit<K>`][crate::curfit], which wraps `curfit`, used to fit a curve, with degree *K, to a set of
+*(x<sub>i</sub>,y<sub>i</sub>)* data points, with the condition *x<sub>i+1</sub>&gt;x<sub>i+1</sub>*; an example of this
+type of data set would be an array with time and temperatures, measured over a period of time, and,
+
+- [`ParameterCurveSplineFit<K,N>`][crate::concur], wrapping `concur`, to fit an --optionally constrained-- parametrized
+curve, with degree *K*, to data points consisting of a input-parameter value *u<sub>i</sub>*, also with the condition that
+*u<sub>i+1</sub>&gt;u<sub>i+1</sub>*, and a set of *(x<sub>i</sub>,y<sub>i</sub>)* in two dimensions *(N=2)*, or a set of
+*(x<sub>i</sub>,y<sub>i</sub>,z<sub>i</sub>)* in three dimensions *(N=3)*, or even more dimensions *(N<=10)*; an example of this
+is a trajectory of a fly flying over a dinner table.
+
+Both of these are generic spline implementations,
+ using spline degree *`K`* and space dimension *`N`* as type parameters.
+Dierckx strongly recommends to use only odd degree linear *(N=1)*, cubic *(N=3)*, and quintic *(N=5)* spline functions.
+To avoid using type parameters, the following type aliases have been defined:
+
+- **Type aliases for `CurveSplineFit<K>`**
+
+|      Alias            | K |
+|-----------------------|:-:|
+|`LinearSplineFit`      | 1 |
+|`CubicSplineFit`       | 3 |
+|`QuinticSplineFit`     | 5 |
+
+
+
+- **Type aliases for `ParameterCurveSplineFit<K,N>`**
+
+|          Alias        | K | N |
+|-----------------------|:-:|:-:|
+| `LinearSplineFit2D`   | 1 | 2 |
+| `CubicSplineFit2D`    | 3 | 2 |
+| `QuinticSplineFit2D`  | 5 | 2 |
+| `LinearSplineFit3D`   | 1 | 3 |
+| `CubicSplineFit3D`    | 3 | 3 |
+| `QuinticSplineFit3D`  | 5 | 3 |
+
+To use a constrained spline-fit for one-dimensional curves,
+ you can use a parametrized curve representation (use x as 'u', and y as 'xn') to use Dierckx' `concur` instead of
+ the default `curfit` subroutine:
+
+|      Alias            | K | N |
+|-----------------------|:-:|:-:|
+|`LinearSplineFit1D`    | 1 | 1 |
+|`CubicSplineFit1D`     | 3 | 1 |
+|`QuinticSplineFit1D`   | 5 | 1 |
+
+
+
+
+# Spline-Fit Types
+
+For a dataset, the following spline-types can be generated:
+
+- **Interpolating Splines**   
+These splines fit the given data exactly, with no error, with the knots at the location of the input parameter values.
+Besides the input data, no further input is needed, unless you want to set specific boundary conditions.
+
+- **Least-Squares Splines**  
+These are obtained when you specify the location of the knots. 
+The splines will be fitted to minimize the square deviation between the spline and data points.
+The resulting spline values can deviate from the given output data values.
+It is common to use equidistant locations of the knots, in which case the spline is referred to as a *cardinal spline**.
+Additional input data here are the location of the knots, and optional boundary conditions.
+
+- **Smoothing spline**   
+Smoothing splines are generated by supplying a measure for the estimated 'noise' in the data, in form of an RMS error (Root Mean Square noise value).
+The smoothing spline algorithm will add knots until the fit error is less than the given RMS noise estimate.
+A weighting factor can be added to each datapoint too, to limit the effect of those points on the fit result.
+
+
+
+# Spline` Spline Represenations
+The result of the spline fits is an array of knot locations, 
+ consist of curves as single input parameter values,
+ and *N* ---for each dimension one--- coefficient values.
  
- f(p)=sum((w(i)*(y(i)-s(x(i))))**2) be <= s, 
+In this library these are represented by a `Spline<K,N>` object,
+ with *K* the spline degree, 
+ *N* the space dimension,
+ and containing two vectors,
+ a vector *t*, containing the knot locations,
+ and a vector *c*, containing the spline coefficients.
 
-with s a given nonnegative constant, called the smoothing factor. 
-The fit s(x) is given in the b-spline representation (b-spline coefficients c(j),j=1,2,...,n-k-1) and can be evaluated by means of subroutine splev. 
+For convenience, the following aliases have been defined:
 
-# curfit parameters: 
+|          Alias        | K | N |
+|-----------------------|:-:|:-:|
+| `LinearSpline`        | 1 | 1 |
+| `CubicSpline`         | 3 | 1 |
+| `QuinticSpline`       | 5 | 1 |
+| `LinearSpline2D`      | 1 | 2 |
+| `CubicSpline2D`       | 3 | 2 |
+| `QuinticSpline2D`     | 5 | 2 |
+| `LinearSpline3D`      | 1 | 3 |
+| `CubicSpline3D`       | 3 | 3 |
+| `QuinticSpline3D`     | 5 | 3 |
 
-- iopt (integer, unchanged on exit)
-On entry iopt must specify whether a weighted least-squares spline (iopt=-1) or a smoothing spline (iopt= 0 or 1) must be determined. 
-If iopt=0 the routine will start with an initial set of knots t(i)=xb, t(i+k+1)=xe, i=1,2,...  k+1. 
-If iopt=1 the routine will continue with the knots found at the last call of the routine. 
 
-attention: a call with iopt=1 must always be immediately preceded by another call with iopt=1 or iopt=0. 
-
-- m (integer, unchanged on exit)
-On entry m must specify the number of data points.  
-m > k. 
-
-- x (float, unchanged on exit)
-Real array of dimension at least (m). 
-Before entry, x(i) must be set to the i-th value of the independent variable x, for i=1,2,...,m. these values must be supplied in strictly ascending order. unchanged on exit. 
-
-- y (float, unchanged on exit)
-Real array of dimension at least (m). 
-Before entry, x(i) must be set to the i-th value of the dependent variable y, for i=1,2,...,m. these values must be supplied in strictly ascending order. unchanged on exit. 
-
-w     : real array of dimension at least (m). before entry, w(i) 
-        must be set to the i-th value in the set of weights. the 
-        w(i) must be strictly positive. unchanged on exit. 
-        see also further comments. 
-xb,xe : real values. on entry xb and xe must specify the boundaries 
-        of the approximation interval. xb<=x(1), xe>=x(m). 
-        unchanged on exit. 
-k     : integer. on entry k must specify the degree of the spline. 
-        1<=k<=5. it is recommended to use cubic splines (k=3). 
-        the user is strongly dissuaded from choosing k even,together 
-        with a small s-value. unchanged on exit. 
-s     : real.on entry (in case iopt>=0) s must specify the smoothing 
-        factor. s >=0. unchanged on exit. 
-        for advice on the choice of s see further comments. 
-nest  : integer. on entry nest must contain an over-estimate of the 
-        total number of knots of the spline returned, to indicate 
-        the storage space available to the routine. nest >=2*k+2. 
-        in most practical situation nest=m/2 will be sufficient. 
-        always large enough is  nest=m+k+1, the number of knots 
-        needed for interpolation (s=0). unchanged on exit. 
-n     : integer. 
-        unless ier =10 (in case iopt >=0), n will contain the 
-        total number of knots of the spline approximation returned.  
-        if the computation mode iopt=1 is used this value of n 
-        should be left unchanged between subsequent calls. 
-        in case iopt=-1, the value of n must be specified on entry.  
-t     : real array of dimension at least (nest). 
-        on succesful exit, this array will contain the knots of the 
-        spline,i.e. the position of the interior knots t(k+2),t(k+3) 
-        ...,t(n-k-1) as well as the position of the additional knots 
-        t(1)=t(2)=...=t(k+1)=xb and t(n-k)=...=t(n)=xe needed for 
-        the b-spline representation. 
-        if the computation mode iopt=1 is used, the values of t(1), 
-        t(2),...,t(n) should be left unchanged between subsequent 
-        calls. if the computation mode iopt=-1 is used, the values 
-        t(k+2),...,t(n-k-1) must be supplied by the user, before 
-        entry. see also the restrictions (ier=10). 
-c     : real array of dimension at least (nest). 
-        on succesful exit, this array will contain the coefficients 
-        c(1),c(2),..,c(n-k-1) in the b-spline representation of s(x) 
-fp    : real. unless ier=10, fp contains the weighted sum of 
-        squared residuals of the spline approximation returned. 
-wrk   : real array of dimension at least (m*(k+1)+nest*(7+3*k)). 
-        used as working space. if the computation mode iopt=1 is 
-        used, the values wrk(1),...,wrk(n) should be left unchanged 
-        between subsequent calls. 
-lwrk  : integer. on entry,lwrk must specify the actual dimension of 
-        the array wrk as declared in the calling (sub)program.lwrk 
-        must not be too small (see wrk). unchanged on exit. 
-iwrk  : integer array of dimension at least (nest). 
-        used as working space. if the computation mode iopt=1 is 
-        used,the values iwrk(1),...,iwrk(n) should be left unchanged 
-        between subsequent calls. 
-
-# Errors
-	   ier   : integer. unless the routine detects an error, ier contains a 
-	           non-positive value on exit, i.e. 
-	    ier=0  : normal return. the spline returned has a residual sum of 
-	             squares fp such that abs(fp-s)/s <= tol with tol a relat- 
-	             ive tolerance set to 0.001 by the program. 
-	    ier=-1 : normal return. the spline returned is an interpolating 
-	             spline (fp=0). 
-	    ier=-2 : normal return. the spline returned is the weighted least- 
-	             squares polynomial of degree k. in this extreme case fp 
-	             gives the upper bound fp0 for the smoothing factor s. 
-	    ier=1  : error. the required storage space exceeds the available 
-	             storage space, as specified by the parameter nest. 
-	             probably causes : nest too small. if nest is already 
-	             large (say nest > m/2), it may also indicate that s is 
-	             too small 
-	             the approximation returned is the weighted least-squares 
-	             spline according to the knots t(1),t(2),...,t(n). (n=nest) 
-	             the parameter fp gives the corresponding weighted sum of 
-	             squared residuals (fp>s). 
-	    ier=2  : error. a theoretically impossible result was found during 
-	             the iteration proces for finding a smoothing spline with 
-	             fp = s. probably causes : s too small. 
-	             there is an approximation returned but the corresponding 
-	             weighted sum of squared residuals does not satisfy the 
-	             condition abs(fp-s)/s < tol. 
-	    ier=3  : error. the maximal number of iterations maxit (set to 20 
-	             by the program) allowed for finding a smoothing spline 
-	             with fp=s has been reached. probably causes : s too small 
-	             there is an approximation returned but the corresponding 
-	             weighted sum of squared residuals does not satisfy the 
-	             condition abs(fp-s)/s < tol. 
-	    ier=10 : error. on entry, the input data are controlled on validity 
-	             the following restrictions must be satisfied. 
-	             -1<=iopt<=1, 1<=k<=5, m>k, nest>2*k+2, w(i)>0,i=1,2,...,m 
-	             xb<=x(1)<x(2)<...<x(m)<=xe, lwrk>=(k+1)*m+nest*(7+3*k) 
-	             if iopt=-1: 2*k+2<=n<=min(nest,m+k+1) 
-	                         xb<t(k+2)<t(k+3)<...<t(n-k-1)<xe 
-	                       the schoenberg-whitney conditions, i.e. there 
-	                       must be a subset of data points xx(j) such that 
-	                         t(j) < xx(j) < t(j+k+1), j=1,2,...,n-k-1 
-	             if iopt>=0: s>=0 
-	                         if s=0 : nest >= m+k+1 
-	             if one of these conditions is found to be violated,control 
-	             is immediately repassed to the calling program. in that 
-	             case there is no approximation returned. 
-
-	  further comments: 
-	   by means of the parameter s, the user can control the tradeoff 
-	   between closeness of fit and smoothness of fit of the approximation.  
-	   if s is too large, the spline will be too smooth and signal will be 
-	   lost ; if s is too small the spline will pick up too much noise. in 
-	   the extreme cases the program will return an interpolating spline if 
-	   s=0 and the weighted least-squares polynomial of degree k if s is 
-	   very large. between these extremes, a properly chosen s will result 
-	   in a good compromise between closeness of fit and smoothness of fit.  
-	   to decide whether an approximation, corresponding to a certain s is 
-	   satisfactory the user is highly recommended to inspect the fits 
-	   graphically. 
-	   recommended values for s depend on the weights w(i). if these are 
-	   taken as 1/d(i) with d(i) an estimate of the standard deviation of 
-	   y(i), a good s-value should be found in the range (m-sqrt(2*m),m+ 
-	   sqrt(2*m)). if nothing is known about the statistical error in y(i) 
-	   each w(i) can be set equal to one and s determined by trial and 
-	   error, taking account of the comments above. the best is then to 
-	   start with a very large value of s ( to determine the least-squares 
-	   polynomial and the corresponding upper bound fp0 for s) and then to 
-	   progressively decrease the value of s ( say by a factor 10 in the 
-	   beginning, i.e. s=fp0/10, fp0/100,...and more carefully as the 
-	   approximation shows more detail) to obtain closer fits. 
-	   to economize the search for a good s-value the program provides with 
-	   different modes of computation. at the first call of the routine, or 
-	   whenever he wants to restart with the initial set of knots the user 
-	   must set iopt=0. 
-	   if iopt=1 the program will continue with the set of knots found at 
-	   the last call of the routine. this will save a lot of computation 
-	   time if curfit is called repeatedly for different values of s. 
-	   the number of knots of the spline returned and their location will 
-	   depend on the value of s and on the complexity of the shape of the 
-	   function underlying the data. but, if the computation mode iopt=1 
-	   is used, the knots returned may also depend on the s-values at 
-	   previous calls (if these were smaller). therefore, if after a number 
-	   of trials with different s-values and iopt=1, the user can finally 
-	   accept a fit as satisfactory, it may be worthwhile for him to call 
-	   curfit once more with the selected value for s but now with iopt=0.  
-	   indeed, curfit may then return an approximation of the same quality 
-	   of fit but with fewer knots and therefore better if data reduction 
-	   is also an important objective for the user. 
-
-	  other subroutines required: 
-	    fpback,fpbspl,fpchec,fpcurf,fpdisc,fpgivs,fpknot,fprati,fprota 
-
-	  references: 
-	   dierckx p. : an algorithm for smoothing, differentiation and integ- 
-	                ration of experimental data using spline functions, 
-	                j.comp.appl.maths 1 (1975) 165-184. 
-	   dierckx p. : a fast algorithm for smoothing data on a rectangular 
-	                grid while using spline functions, siam j.numer.anal. 
-	                19 (1982) 1286-1304. 
-	   dierckx p. : an improved algorithm for curve fitting with spline 
-	                functions, report tw54, dept. computer science,k.u. 
-	                leuven, 1981. 
-	   dierckx p. : curve and surface fitting with splines, monographs on 
-	                numerical analysis, oxford university press, 1993. 
-
-	  author: 
-	    p.dierckx 
-	    dept. computer science, k.u. leuven 
-	    celestijnenlaan 200a, b-3001 heverlee, belgium. 
-	    e-mail : Paul.Dierckx@cs.kuleuven.ac.be 
-
-	  creation date : may 1979 
-	  latest update : march 1987 

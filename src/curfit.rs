@@ -1,20 +1,22 @@
 use std::iter::repeat;
-use crate::dierckx::{curfit_};
+//use crate::dierckx::{curfit_};
+use dierckx_sys::{curfit_};
 use super::{Spline, DierckxError};
-use crate::Result;
+use crate::FitResult;
 
 
-pub type CubicCurveFit = XYCurveSplineFit::<3>;
-pub type QuinticCurveFit = XYCurveSplineFit::<5>;
+pub type CubicCurveFit = CurveSplineFit::<3>;
+pub type QuinticCurveFit = CurveSplineFit::<5>;
 
 
-pub struct XYCurveSplineFit<const K:usize> {
+pub struct CurveSplineFit<const K:usize> {
     // input values
     x: Vec<f64>,    // data x coordinates
     y: Vec<f64>,    // data y coordinates
     w: Vec<f64>,    // weight factors, 
 
-    pub tc: Spline<K>,
+    pub tc: Spline<K,1>,
+    e_rms: Option<f64>,
 
     // work space values
     wrk: Vec<f64>,  // used for successive tries
@@ -22,26 +24,7 @@ pub struct XYCurveSplineFit<const K:usize> {
 }
 
 
-/**
- * 
- Fits a smooth B-Spline 1D curve from (x,y) data
- 
- It is intended to fit a 1D Spline curve through a set of points,
- given as x and y vectors, and with the x values in strictly ascending order.
- As an example, the values could be temperature data, measured over a period of time,
- with the temperature sensor having a limited accuaracy.
- 
- This is a Rust wrapper for Dierckx curfit Fortran subroutine, part
- of Dierckx FITPACK library.
- For the Foreign Function Interface to the Fortan subroutnine
- see [curfit][dierckx::curfit_];
- as you can see, it is not easy to use as it has 18(!) arguments, and requires quite a bit of reading and experimenting
- to grasp.
-  
- This wrapper encapsulates the internal data, and breaks up the curfit call in multiple steps.
-
- */
-impl<const K:usize> XYCurveSplineFit<K> {
+impl<const K:usize> CurveSplineFit<K> {
 
     /**
      Constructor, with inputs x and y vectors, and an optional weights vectors.
@@ -56,17 +39,17 @@ impl<const K:usize> XYCurveSplineFit<K> {
         assert!(w.len()==y.len());
 
         let nest = m * K  + 1;
-        let tc = Spline::<K>::new(vec![0.0; nest], vec![0.0; nest]);
+        let tc = Spline::<K,1>::new(vec![0.0; nest], vec![0.0; nest]);
         let iwrk = vec![0i32; nest];
 
         let lwrk = m * (K + 1) + nest * (7 + 3 * K);
         let wrk = vec![0f64; lwrk];
 
-        Self { x, y, w, tc, wrk, iwrk}
+        Self { x, y, w, tc, wrk, iwrk, e_rms:None}
 
     }
 
-    pub fn set_weights(&mut self, weights:Vec<f64>) -> Result<&mut Self> {
+    pub fn set_weights(mut self, weights:Vec<f64>) -> FitResult<Self> {
         if weights.len() == self.x.len() {
             self.w = weights;
             Ok(self)
@@ -75,32 +58,30 @@ impl<const K:usize> XYCurveSplineFit<K> {
         }
     }
 
-    fn curfit(&mut self, iopt:i32, noise_pct:Option<f64>, knots: Option<Vec<f64>>) ->  (i32, f64) {
-        let k = K;
-        let m = self.x.len();
-        let nest = m * K  + 1;
-        let lwrk = self.wrk.len();
+    fn curfit(&mut self, iopt:i32, e_rms:Option<f64>, knots: Option<Vec<f64>>) ->  i32 {
+        let k = K as i32;
+        let m = self.x.len() as i32;
+        let nest = m * k  + 1;
+        let lwrk = self.wrk.len() as i32;
         let mut fp = 0.0;
-        let mut ierr = 0;
-        let y_rms:f64;
-        let s = if let Some(e) = noise_pct {
-            y_rms = (self.y.iter().map(|y|y*y).sum::<f64>()/m as f64).sqrt();
-            m as f64 * (e * y_rms / 100.0).powi(2)
+        let s = if let Some(e) = e_rms {
+            m as f64 * e.powi(2)
         } else {
-            y_rms = f64::MAX; // to force fp output to 0.0
             0.0
         };
+        let mut ierr = 0;
+
         //let e_rms_pct = e_rms_pct.unwrap_or(0.0); // as percentage of y_rms
         //let y_rms = (self.y.iter().map(|y|y*y).sum::<f64>()/m as f64).sqrt();
         //let s = m as f64 * (e_rms_pct * y_rms / 100.0).powi(2);
         if let Some(knots) = knots {
             self.tc.t = knots;
         }
-        let mut n = self.tc.t.len();
+        let mut n = self.tc.t.len() as i32;
         unsafe {
             curfit_(&iopt, &m, 
                 self.x.as_ptr(), self.y.as_ptr(), self.w.as_ptr(), 
-                &self.x[0], &self.x[m-1], 
+                &self.x[0], &self.x[m as usize -1], 
                 &k, &s, &nest, &mut n, 
                 self.tc.t.as_mut_ptr(), self.tc.c.as_mut_ptr(), 
                 &mut fp, 
@@ -108,9 +89,10 @@ impl<const K:usize> XYCurveSplineFit<K> {
                 &mut ierr
             );
         }
-        self.tc.t.truncate(n);
-        self.tc.c.truncate(n);
-        (ierr, (fp/m as f64).sqrt() * 100.0/ y_rms) // fit error as percent rms
+        self.tc.t.truncate(n as usize);
+        self.tc.c.truncate(n as usize);
+        self.e_rms = Some((fp/m as f64).sqrt());
+        ierr
     }
 
 
@@ -121,7 +103,7 @@ impl<const K:usize> XYCurveSplineFit<K> {
      * and aligned to integer multiples of it. Knots cover the range within
      * the bounds of x.
      */
-    pub fn cardinal_spline(mut self, dt:f64) -> Result<(Spline<K>,f64)>{
+    pub fn cardinal_spline(mut self, dt:f64) -> FitResult<Spline<K,1>>{
         let m = self.x.len();
         let tb = (self.x[0]/dt).ceil() * dt;
         let te = (self.x[m-1]/dt).floor() * dt;
@@ -143,9 +125,9 @@ impl<const K:usize> XYCurveSplineFit<K> {
             )
             .collect();
 
-        let (ierr, fp) = self.curfit(-1, Some(0.0),Some(t));
+        let ierr = self.curfit(-1, Some(0.0),Some(t));
         if ierr<=0  {
-            Ok((self.tc, fp))
+            Ok(self.tc)
         } else {
             Err(DierckxError::new(ierr).into())
         }
@@ -154,8 +136,8 @@ impl<const K:usize> XYCurveSplineFit<K> {
     /**
      Interpolating Spline
      */ 
-    pub fn interpolating_spline(mut self) -> Result<Spline<K>> {
-        let (ierr, _fp) = self.curfit(0, Some(0.0),None);
+    pub fn interpolating_spline(mut self) -> FitResult<Spline<K,1>> {
+        let ierr = self.curfit(0, Some(0.0),None);
         if ierr<=0  {
             Ok(self.tc)
         } else {
@@ -169,32 +151,13 @@ impl<const K:usize> XYCurveSplineFit<K> {
      * A spline with a minimal number of knots, with error less than the specifed rms value.
      * Repeat fit with smaller rms value using `smooth_more`.
      */
-    pub fn smoothing_spline(&mut self, rms: f64) -> Result<(&Self,f64)>{
-        let (ierr, fp) = self.curfit(0, Some(rms), None);
+    pub fn smoothing_spline(mut self, rms: f64) -> FitResult<Spline<K,1>>{
+        let ierr = self.curfit(0, Some(rms), None);
         if ierr<=0  {
-            Ok((self, fp))
-        } else {
-            Err(DierckxError(ierr).into())
-        }
-    }
-
-    /**
-     * Improved Smoothing Spline 
-     * 
-     * Repeat fit with smaller rms value after a first `smoothing_spline` attempt.
-     */
-    pub fn smooth_more(&mut self, rms: f64) -> Result<(&Self,f64)>{
-        let (ierr, fp) = self.curfit(1, Some(rms),None);
-        if ierr<=0  {
-            Ok((self, fp.sqrt()/self.x.len() as f64))
+            Ok(self.tc)
         } else {
             Err(DierckxError(ierr).into())
         }
     }
 }
 
-impl<const K:usize> AsRef<Spline<K>> for XYCurveSplineFit<K> {
-    fn as_ref(&self) -> &Spline<K> {
-        &self.tc
-    }
-}
