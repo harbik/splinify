@@ -1,13 +1,18 @@
-use super::{DierckxError, FitResult};
+
+use super::{DierckxError, Result};
 use dierckx_sys::{splev_, curev_};
+use serde::{Deserialize, Serialize};
 
 /**
  * General B-Spline Curve Knot/Coefficient Representation
  */
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Spline<const K:usize, const N:usize> {
     pub t: Vec<f64>,        // Knot values
     pub c: Vec<f64>,        // b-Spline coefficients
+    k: usize,               // Spline degree
+    n: usize,               // Spline dimension
+    #[serde(skip)]
     pub e_rms: Option<f64>, // optional rms fit error
 }
 
@@ -18,10 +23,10 @@ impl<const K:usize, const N:usize> Spline<K, N>  {
 
     pub fn with_e_rms(t: Vec<f64>, c: Vec<f64>, e_rms: Option<f64>) -> Self {
         assert!(N*t.len()==c.len());
-        Self {t, c, e_rms}
+        Self {t, c, e_rms,k: K, n:N}
     }
     
-    pub fn evaluate(&self, x: &Vec<f64>) -> FitResult<Vec<f64>> {
+    pub fn evaluate(&self, x: &Vec<f64>) -> Result<Vec<f64>> {
         let (ierr, y)  = 
             match N {
                 1  => self.splev(x),

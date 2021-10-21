@@ -16,7 +16,7 @@ use std::iter::repeat;
 //use crate::dierckx::{concur_};
 use dierckx_sys::{concur_};
 use super::{Spline, DierckxError};
-use crate::FitResult;
+use crate::Result;
 
 
 pub struct ParameterCurveSplineFit<const K:usize, const N:usize> {
@@ -69,7 +69,7 @@ impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
     pub fn new(
         u: Vec<f64>,
         xn: Vec<f64>,
-    ) -> FitResult<Self> {
+    ) -> Result<Self> {
 
         let k = K as i32;
         if ![1,3,5].contains(&(k as i32)) { return Err(DierckxError(208).into()) };
@@ -116,7 +116,7 @@ impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
         v
     }
 
-    pub fn weights(mut self, weights: Vec<f64>) -> FitResult<Self> {
+    pub fn weights(mut self, weights: Vec<f64>) -> Result<Self> {
         if weights.len() == self.u.len() {
             self.w = weights;
             Ok(self)
@@ -125,7 +125,7 @@ impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
         }
     }
 
-    pub fn begin_constraints<const D: usize>(mut self, ub: [[f64;N];D]) -> FitResult<Self> {
+    pub fn begin_constraints<const D: usize>(mut self, ub: [[f64;N];D]) -> Result<Self> {
         if D<=(K+1)/2+1 {
             self.xb = ub.iter().flatten().cloned().collect();
             self.ib = D as i32 -1;
@@ -135,7 +135,7 @@ impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
         }
     }
 
-    pub fn end_constraints<const D: usize>(mut self, ub: [[f64;N];D]) -> FitResult<Self> {
+    pub fn end_constraints<const D: usize>(mut self, ub: [[f64;N];D]) -> Result<Self> {
         if D<=(K+1)/2+1 {
             self.xe = ub.iter().flatten().cloned().collect();
             self.ie = D as i32 -1;
@@ -210,7 +210,7 @@ impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
      * and aligned to integer multiples of it. Knots cover the range within
      * the bounds of x.
      */
-    pub fn cardinal_spline(mut self, dt:f64) -> FitResult<Spline<K,N>>{
+    pub fn cardinal_spline(mut self, dt:f64) -> Result<Spline<K,N>>{
         let m = self.u.len();
         let tb = (self.u[0]/dt).ceil() * dt;
         let te = (self.u[m-1]/dt).floor() * dt;
@@ -249,7 +249,7 @@ impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
       
       
      */ 
-    pub fn interpolating_spline(mut self) -> FitResult<Spline<K,N>> {
+    pub fn interpolating_spline(mut self) -> Result<Spline<K,N>> {
         let ierr = self.concur(0, Some(0.0),None);
         if ierr<=0  {
             Ok(self.into())
@@ -265,7 +265,7 @@ impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
      * - rms: root mean square error
      * 
      */
-    pub fn smoothing_spline(mut self, rms: f64) -> FitResult<Spline<K,N>>{
+    pub fn smoothing_spline(mut self, rms: f64) -> Result<Spline<K,N>>{
         let ierr= self.concur(0, Some(rms), None);
         if ierr>0 {
             Err(DierckxError(ierr).into())
@@ -294,7 +294,7 @@ impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
             rms_scale_ratio: f64, 
             converged: impl Fn(i32, i32, f64, f64) -> bool, 
             n_iter: Option<usize>,
-        ) -> FitResult<Spline<K,N>>{
+        ) -> Result<Spline<K,N>>{
         let n_iter = n_iter.unwrap_or(40);
         let ierr= self.concur(0, Some(rms_start), None);
         if ierr>0 {

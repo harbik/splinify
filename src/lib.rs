@@ -22,7 +22,7 @@ use std::fmt;
 //use dierckx_sys::{splev_};
 
 
-pub type FitResult<T> = std::result::Result<T, Box<dyn error::Error>>;
+pub type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 // Single Output Spline Fit
 pub type LinearSplineFit = CurveSplineFit<1>;
@@ -77,97 +77,3 @@ impl fmt::Display for DierckxError {
 
 impl error::Error for DierckxError {}
 
-/*
-
-
-/**
- * General B-Spline Curve Knot/Coefficient Representation
- */
-#[derive(Clone)]
-pub struct Spline<const K:usize> {
-    pub t: Vec<f64>,    // Knot values
-    pub c: Vec<f64>,    // b-Spline coefficients
-}
-
-impl<const K:usize> Spline<K>  {
-    pub fn new(t: Vec<f64>, c: Vec<f64>) -> Self {
-        assert!(t.len()==c.len());
-        Self {t, c}
-    }
-    
-    pub fn evaluate(&self, x: &Vec<f64>) -> FitResult<Vec<f64>> {
-        /*
-
-        let k = K as i32;
-        let m = x.len() as i32;
-        let mut y = vec![0.0; m as usize];
-        let n = self.t.len() as i32;
-        let mut ierr = 0;
-        unsafe {splev_(self.t.as_ptr(), &n, self.c.as_ptr(), &k, x.as_ptr(), y.as_mut_ptr(), &m, &mut ierr) }
-        */
-        let (ierr, y) = self.splev(x);
-        if ierr<=0 {
-            Ok(y)
-        } else {
-            Err(DierckxError::new(ierr).into())
-        }
-    }
-
-    fn splev(&self, x: &Vec<f64>) -> (i32, Vec<f64>) {
-        let k = K as i32;
-        let m = x.len() as i32;
-        let mut y = vec![0.0; m as usize];
-        let n = self.t.len() as i32;
-        let mut ierr = 0;
-        unsafe {splev_(self.t.as_ptr(), &n, self.c.as_ptr(), &k, x.as_ptr(), y.as_mut_ptr(), &m, &mut ierr) }
-        (ierr, y)
-    }
-
-}
-
-*/
-
-pub fn read_csv_xy(csv_file: &str) -> FitResult<(Vec<f64>, Vec<f64>)> {
-    let mut rdr = csv::Reader::from_path(csv_file)?;
-    //let mut r = csv::StringRecord::new();
-    let mut x = Vec::<f64>::new();
-    let mut y = Vec::<f64>::new();
-    for r in rdr.records() {
-        if let Ok(r) = r {
-            x.push(r[0].parse::<f64>().unwrap());
-            y.push(r[1].parse::<f64>().unwrap());
-        } else {
-            break
-        }
-    }
-    Ok((x,y))
-}
-
-pub fn read_csv_uxy(csv_file: &str) -> FitResult<(Vec<f64>, Vec<f64>, Vec<f64>)> {
-    let mut rdr = csv::Reader::from_path(csv_file)?;
-    //let mut r = csv::StringRecord::new();
-    let mut u = Vec::<f64>::new();
-    let mut x = Vec::<f64>::new();
-    let mut y = Vec::<f64>::new();
-    for r in rdr.records() {
-        if let Ok(r) = r {
-            u.push(r[0].parse::<f64>().unwrap());
-            x.push(r[1].parse::<f64>().unwrap());
-            y.push(r[2].parse::<f64>().unwrap());
-        } else {
-            break
-        }
-    }
-    Ok((u, x,y))
-}
-
-pub fn write_csv_xy(csv_file: &str, x: &Vec<f64>, y: &Vec<f64>) -> FitResult<()> {
-    let mut wtr = csv::Writer::from_path(csv_file)?;
-    wtr.write_record(&["wl[nm]", "spd[-]"])?;
-    for (&x,&y) in x.iter().zip(y.iter()) {
-        
-        wtr.write_record(&[format!("{:.2}",x), format!("{:.4}",y)])?
-    }
-    wtr.flush()?;
-    Ok(())
-}

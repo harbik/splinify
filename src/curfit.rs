@@ -2,7 +2,7 @@ use std::iter::repeat;
 //use crate::dierckx::{curfit_};
 use dierckx_sys::{curfit_};
 use super::{Spline, DierckxError};
-use crate::FitResult;
+use crate::Result;
 
 
 pub type CubicCurveFit = CurveSplineFit::<3>;
@@ -49,7 +49,7 @@ impl<const K:usize> CurveSplineFit<K> {
 
     }
 
-    pub fn set_weights(mut self, weights:Vec<f64>) -> FitResult<Self> {
+    pub fn set_weights(mut self, weights:Vec<f64>) -> Result<Self> {
         if weights.len() == self.x.len() {
             self.w = weights;
             Ok(self)
@@ -103,7 +103,7 @@ impl<const K:usize> CurveSplineFit<K> {
      * and aligned to integer multiples of it. Knots cover the range within
      * the bounds of x.
      */
-    pub fn cardinal_spline(mut self, dt:f64) -> FitResult<Spline<K,1>>{
+    pub fn cardinal_spline(mut self, dt:f64) -> Result<Spline<K,1>>{
         let m = self.x.len();
         let tb = (self.x[0]/dt).ceil() * dt;
         let te = (self.x[m-1]/dt).floor() * dt;
@@ -136,7 +136,7 @@ impl<const K:usize> CurveSplineFit<K> {
     /**
      Interpolating Spline
      */ 
-    pub fn interpolating_spline(mut self) -> FitResult<Spline<K,1>> {
+    pub fn interpolating_spline(mut self) -> Result<Spline<K,1>> {
         let ierr = self.curfit(0, Some(0.0),None);
         if ierr<=0  {
             Ok(self.tc)
@@ -151,7 +151,7 @@ impl<const K:usize> CurveSplineFit<K> {
      * A spline with a minimal number of knots, with error less than the specifed rms value.
      * Repeat fit with smaller rms value using `smooth_more`.
      */
-    pub fn smoothing_spline(mut self, rms: f64) -> FitResult<Spline<K,1>>{
+    pub fn smoothing_spline(mut self, rms: f64) -> Result<Spline<K,1>>{
         let ierr = self.curfit(0, Some(rms), None);
         if ierr<=0  {
             Ok(self.tc)

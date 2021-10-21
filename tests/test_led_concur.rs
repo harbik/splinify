@@ -1,10 +1,10 @@
 
-use dierckx::{ParameterCurveSplineFit, FitResult, read_csv_xy, plot};
+use dierckx::{ParameterCurveSplineFit, Result, read_csv_xy, plot};
 
 
 
 #[test]
-fn test_smoothing() -> FitResult<()> {
+fn test_smoothing() -> Result<()> {
 
     let (x,y) =  read_csv_xy("tests/data/leds4000.csv")? ;
 
@@ -23,7 +23,7 @@ fn test_smoothing() -> FitResult<()> {
 
 
 #[test]
-fn test_interpolating_spline() -> FitResult<()> {
+fn test_interpolating_spline() -> Result<()> {
 
     let x: Vec<f64> = (0..=180).map(|i|(i as f64).to_radians()).collect();
     let y: Vec<f64> = x.iter().map(|x|x.sin().powi(8)).collect();
@@ -42,7 +42,7 @@ fn test_interpolating_spline() -> FitResult<()> {
 
 
 #[test]
-fn constrained_cardinal_spline() -> FitResult<()> {
+fn constrained_cardinal_spline() -> Result<()> {
     let (x,y) =  read_csv_xy("tests/data/leds4000.csv")? ;
 
     let cs = ParameterCurveSplineFit::<1,1>::new(x.clone(), y.clone())?;

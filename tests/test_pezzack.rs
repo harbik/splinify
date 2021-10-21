@@ -1,6 +1,6 @@
 
 extern crate dierckx;
-use dierckx::{ParameterCurveSplineFit, FitResult, read_csv_xy, plot};
+use dierckx::{ParameterCurveSplineFit, Result, read_csv_xy, plot};
 
 /*
 
@@ -32,7 +32,7 @@ fn plot<const K:usize> (filepath: &str, x: Vec<f64>, y: Vec<f64>, s: Spline<K>) 
 
 
 #[test]
-fn test_pezzack() -> FitResult<()> {
+fn test_pezzack() -> Result<()> {
 
     let (x,y) =  read_csv_xy("tests/data/pezzack_noisy.csv")? ;
 

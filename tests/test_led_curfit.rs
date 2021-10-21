@@ -1,8 +1,8 @@
 
-use dierckx::{CubicCurveFit, CurveSplineFit, ParameterCurveSplineFit, FitResult, read_csv_xy, plot};
+use dierckx::{CubicCurveFit, CurveSplineFit, ParameterCurveSplineFit, Result, read_csv_xy, plot};
 
 #[test]
-fn test_smoothing() -> FitResult<()> {
+fn test_smoothing() -> Result<()> {
     let (x,y) =  read_csv_xy("tests/leds4000.csv")? ;
 
     let d = CurveSplineFit::<3>::new(x.clone(), y.clone());
@@ -19,7 +19,7 @@ fn test_smoothing() -> FitResult<()> {
 }
 
 #[test]
-fn test_cardinal() -> FitResult<()> {
+fn test_cardinal() -> Result<()> {
 
     let (x,y) =  read_csv_xy("tests/leds4000.csv")? ;
 
@@ -34,7 +34,7 @@ fn test_cardinal() -> FitResult<()> {
 
 
 #[test]
-fn test_interpolating_spline() -> FitResult<()> {
+fn test_interpolating_spline() -> Result<()> {
     use plotters::prelude::*;
 
 
@@ -74,7 +74,7 @@ fn test_interpolating_spline() -> FitResult<()> {
 
 
 #[test]
-fn constrained_cardinal_spline() -> FitResult<()> {
+fn constrained_cardinal_spline() -> Result<()> {
 
     let (x,y) =  read_csv_xy("tests/leds4000.csv")? ;
 
