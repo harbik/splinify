@@ -3,16 +3,18 @@ use dierckx::{CubicCurveFit, CurveSplineFit, ParameterCurveSplineFit, Result, re
 
 #[test]
 fn test_smoothing() -> Result<()> {
-    let (x,y) =  read_csv_xy("tests/leds4000.csv")? ;
+    let (x,y) =  read_csv_xy("tests/data/leds4000.csv")? ;
 
     let d = CurveSplineFit::<3>::new(x.clone(), y.clone());
-    let d = d.smoothing_spline(1.25)?;
+    let d = d.smoothing_spline(0.01)?;
     println!("knots {:?}", d.t);
     println!("number of knots: {}", d.t.len());
-    println!("fp: {:?}", d.e_rms);
+    println!("fp: {:?}", d.e);
+
+    let json = serde_json::to_string_pretty(&d)?;
+    println!("{}", json);
 
     plot("tests/img/curfit-smooth.png",x,y,d)?;
-
 
 
     Ok(())
@@ -27,7 +29,7 @@ fn test_cardinal() -> Result<()> {
     let tc = d.cardinal_spline(10.0)?;
     println!("knots {:?}", tc.t);
     println!("number of knots: {}", tc.t.len());
-    println!("fp: {:?}", tc.e_rms);
+    println!("fp: {:?}", tc.e);
 
     Ok(())
 }
@@ -86,7 +88,7 @@ fn constrained_cardinal_spline() -> Result<()> {
      
     println!("knots {:?}", tc.t);
     println!("number of knots: {}", tc.t.len());
-    println!("fp: {:?}", tc.e_rms.unwrap());
+    println!("fp: {:?}", tc.e.unwrap());
 
     Ok(())
 }

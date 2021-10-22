@@ -1,5 +1,4 @@
 use std::iter::repeat;
-//use crate::dierckx::{curfit_};
 use dierckx_sys::{curfit_};
 use super::{Spline, DierckxError};
 use crate::Result;
@@ -15,7 +14,10 @@ pub struct CurveSplineFit<const K:usize> {
     y: Vec<f64>,    // data y coordinates
     w: Vec<f64>,    // weight factors, 
 
-    pub tc: Spline<K,1>,
+    pub t: Vec<f64>,
+    pub c: Vec<f64>,
+    pub n: i32,
+
     e_rms: Option<f64>,
 
     // work space values
@@ -39,13 +41,16 @@ impl<const K:usize> CurveSplineFit<K> {
         assert!(w.len()==y.len());
 
         let nest = m * K  + 1;
-        let tc = Spline::<K,1>::new(vec![0.0; nest], vec![0.0; nest]);
+        let t = vec![0.0;nest];
+        let c = vec![0.0;nest];
+        let n = nest as i32;
+
         let iwrk = vec![0i32; nest];
 
         let lwrk = m * (K + 1) + nest * (7 + 3 * K);
         let wrk = vec![0f64; lwrk];
 
-        Self { x, y, w, tc, wrk, iwrk, e_rms:None}
+        Self { x, y, w, t, c, n, wrk, iwrk, e_rms: None}
 
     }
 
@@ -71,26 +76,20 @@ impl<const K:usize> CurveSplineFit<K> {
         };
         let mut ierr = 0;
 
-        //let e_rms_pct = e_rms_pct.unwrap_or(0.0); // as percentage of y_rms
-        //let y_rms = (self.y.iter().map(|y|y*y).sum::<f64>()/m as f64).sqrt();
-        //let s = m as f64 * (e_rms_pct * y_rms / 100.0).powi(2);
         if let Some(knots) = knots {
-            self.tc.t = knots;
+            self.t = knots;
         }
-        let mut n = self.tc.t.len() as i32;
         unsafe {
             curfit_(&iopt, &m, 
                 self.x.as_ptr(), self.y.as_ptr(), self.w.as_ptr(), 
                 &self.x[0], &self.x[m as usize -1], 
-                &k, &s, &nest, &mut n, 
-                self.tc.t.as_mut_ptr(), self.tc.c.as_mut_ptr(), 
+                &k, &s, &nest, &mut self.n, 
+                self.t.as_mut_ptr(), self.c.as_mut_ptr(), 
                 &mut fp, 
                 self.wrk.as_mut_ptr(), &lwrk, self.iwrk.as_mut_ptr(), 
                 &mut ierr
             );
         }
-        self.tc.t.truncate(n as usize);
-        self.tc.c.truncate(n as usize);
         self.e_rms = Some((fp/m as f64).sqrt());
         ierr
     }
@@ -127,9 +126,9 @@ impl<const K:usize> CurveSplineFit<K> {
 
         let ierr = self.curfit(-1, Some(0.0),Some(t));
         if ierr<=0  {
-            Ok(self.tc)
+            Ok(self.into())
         } else {
-            Err(DierckxError::new(ierr).into())
+            Err(DierckxError(ierr).into())
         }
     }
 
@@ -139,9 +138,9 @@ impl<const K:usize> CurveSplineFit<K> {
     pub fn interpolating_spline(mut self) -> Result<Spline<K,1>> {
         let ierr = self.curfit(0, Some(0.0),None);
         if ierr<=0  {
-            Ok(self.tc)
+            Ok(self.into())
         } else {
-            Err(DierckxError::new(ierr).into())
+            Err(DierckxError(ierr).into())
         }
     }
 
@@ -154,10 +153,24 @@ impl<const K:usize> CurveSplineFit<K> {
     pub fn smoothing_spline(mut self, rms: f64) -> Result<Spline<K,1>>{
         let ierr = self.curfit(0, Some(rms), None);
         if ierr<=0  {
-            Ok(self.tc)
+            Ok(self.into())
         } else {
             Err(DierckxError(ierr).into())
         }
     }
 }
 
+impl<const K:usize> From<CurveSplineFit<K>> for Spline<K,1> {
+    fn from(mut sp: CurveSplineFit<K>) -> Self {
+        sp.t.truncate(sp.n as usize);
+        sp.t.shrink_to_fit();
+        sp.c.truncate((sp.n- K as i32 -1) as usize);
+        sp.c.shrink_to_fit();
+        Spline::with_e_rms(
+            sp.t,
+            sp.c,
+            sp.e_rms,
+
+        )
+    }
+}

@@ -333,7 +333,7 @@ impl<const K:usize, const N:usize> From<ParameterCurveSplineFit<K,N>> for Spline
     fn from(mut sp: ParameterCurveSplineFit<K,N>) -> Self {
         sp.t.truncate(sp.n as usize);
         sp.t.shrink_to_fit();
-        sp.c.truncate((sp.n*sp.idim) as usize);
+        sp.c.truncate((sp.n*sp.idim) as usize); // n-k-1 !!!
         sp.c.shrink_to_fit();
         Spline::with_e_rms(
             sp.t,

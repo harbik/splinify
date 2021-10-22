@@ -40,10 +40,17 @@ pub fn plot<const K: usize>(
         BLACK.mix(1.0).stroke_width(2),
     ))?;
 
+
+    let leg_txt = if let Some(e) = s.e {
+        format!("{} knots  {:.1e} rms", s.t.len(), e)
+    } else {
+        format!("{} knots", s.t.len())
+    };
+
     root.draw(
         &(EmptyElement::at((1550, 100))
             + Text::new(
-                format!("{} knots  {:.4} rms", s.t.len(), s.e_rms.unwrap()),
+                leg_txt,
                 (0, 0),
                 &"sans-serif".into_font().resize(40.0).color(&spline_color),
             )),
@@ -103,12 +110,15 @@ pub fn plot2d<const K: usize>(
         BLACK.mix(1.0).stroke_width(2),
     ))?;
 
+    let leg_txt = if let Some(e) = s.e {
+        format!("{} knots  {:.1e} rms", s.t.len(), e)
+    } else {
+        format!("{} knots", s.t.len())
+    };
+
     root.draw(
         &(EmptyElement::at((1550, 100))
-            + Text::new(
-                format!("{} knots  {:.1e} rms", s.t.len(), s.e_rms.unwrap()),
-                (0, 0),
-                &"sans-serif".into_font().resize(40.0).color(&spline_color),
+            + Text::new( leg_txt, (0, 0), &"sans-serif".into_font().resize(40.0).color(&spline_color),
             )),
     )?;
     root.present()?;

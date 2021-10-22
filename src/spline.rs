@@ -12,8 +12,7 @@ pub struct Spline<const K:usize, const N:usize> {
     pub c: Vec<f64>,        // b-Spline coefficients
     k: usize,               // Spline degree
     n: usize,               // Spline dimension
-    #[serde(skip)]
-    pub e_rms: Option<f64>, // optional rms fit error
+    pub e: Option<f64>, // optional rms fit error
 }
 
 impl<const K:usize, const N:usize> Spline<K, N>  {
@@ -22,9 +21,52 @@ impl<const K:usize, const N:usize> Spline<K, N>  {
     }
 
     pub fn with_e_rms(t: Vec<f64>, c: Vec<f64>, e_rms: Option<f64>) -> Self {
-        assert!(N*t.len()==c.len());
-        Self {t, c, e_rms,k: K, n:N}
+        assert!(c.len() == N * (t.len() - K - 1));
+        Self {t, c, e: e_rms,k: K, n:N}
     }
+
+
+    pub fn eval(&self, xs: &[f64]) -> Result<Vec<f64>> {
+        let n = self.t.len();
+        let mut v:Vec<f64> = Vec::with_capacity(xs.len());
+
+        let mut i = self. k;
+        let mut x_prev = f64::NEG_INFINITY;
+
+        for &x in xs {
+            if x<=x_prev {
+                return Err("x values should be sorted in strict increasing order".into());
+            } else {
+                x_prev = x;
+            };
+            if  x<=self.t[self.k] || x>=self.t[n-self.k+1] {
+                v.push(x.clamp(self.t[self.k], self.t[n-K+1]))
+            } else {
+                while i<n-1 &&self.t[i+1]<=x {
+                    i+=1
+                };
+                v.push(self.deboor(i, x))
+            }
+        };
+        Ok(v)
+    }
+
+    pub fn deboor(&self, i: usize,  x: f64) -> f64 {
+        let mut d = vec![0.0; self.k + 1];
+
+        for j in 0..K+1 {
+            d[j] = self.c[(j + i - self.k)];
+        }
+
+        for r in 1..self.k+1 {
+            for j in (r..=self.k).into_iter().rev() {
+                let alpha = (x - self.t[j + i - self.k]) / (self.t[j + 1 + i - r] - self.t[j + i - self.k]);
+                d[j] = (1.0 - alpha) * d[j - 1] + alpha * d[j]
+            }
+        }
+        d[self.k]
+    }
+
     
     pub fn evaluate(&self, x: &Vec<f64>) -> Result<Vec<f64>> {
         let (ierr, y)  = 
@@ -88,3 +130,13 @@ impl<const K:usize, const N:usize> Spline<K, N>  {
     }
 
 }
+
+    #[test]
+    fn test_eval() -> Result<()> {
+        let s: Spline<3,1> = Spline::new(
+            vec![-2.0, -2.0, -2.0, -2.0, -1.0, 0.0, 1.0, 2.0, 2.0, 2.0, 2.0],
+            vec![0.0, 0.0, 0.0, 6.0, 0.0, 0.0, 0.0, /*check extras*/0.0, 0.0, 0.0, 0.0]
+        );
+        println!("{:.3?}", s.eval(&[-2.0, -1.5, -1.0, -0.5, 0.0, 0.5, 1.0, 1.5, 2.0])?);
+        Ok(())
+    }
