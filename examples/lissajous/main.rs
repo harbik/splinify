@@ -14,7 +14,7 @@ fn main() -> Result<()> {
 
     std::env::set_current_dir(std::path::Path::new(file!()).parent().unwrap())?;   
 
-    let ts: Vec<f64> = (0..=360u32).into_iter().step_by(1).map(|v|(v as f64).to_radians()).collect();
+    let ts: Vec<f64> = (0..=180u32).into_iter().step_by(1).map(|v|(v as f64).to_radians()).collect();
     let mut xy: Vec<f64> = Vec::with_capacity(ts.len()*2);
 
     for t in &ts {
@@ -25,7 +25,7 @@ fn main() -> Result<()> {
     let d = 
         ParameterCurveSplineFit::<3,2>
             ::new(ts.clone(), xy.clone())?
-            .smoothing_spline(1E-4)?;
+            .smoothing_spline(1E-2)?;
 
     let json = serde_json::to_string_pretty(&d)?;
     println!("{}", json);
