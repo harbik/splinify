@@ -10,7 +10,7 @@ fn main() -> Result<()> {
     x.iter().zip(y.iter()).for_each(|(&x,&y)|{xy.push(x); xy.push(y);});
 
     let d = 
-        ParameterCurveSplineFit::<5,2>
+        ParameterCurveSplineFit::<3,2>
             ::new(u.clone(), xy.clone())?
             .smoothing_spline(1E-5)?;
 

@@ -99,7 +99,7 @@ pub fn plot2d<const K: usize>(
 
 
     // plot fitted curve
-    let s_xy = s.evaluate(&u)?;
+    let s_xy = s.eval_n(&u)?;
     chart.draw_series(LineSeries::new(
         s_xy.chunks(2).map(|xy|(xy[0],xy[1])),
         spline_color.mix(1.0).stroke_width(5)))?;
@@ -165,7 +165,7 @@ pub fn read_csv_uxy(csv_file: &str) -> Result<(Vec<f64>, Vec<f64>, Vec<f64>)> {
     Ok((u, x,y))
 }
 
-pub fn write_csv_xy(csv_file: &str, x: &Vec<f64>, y: &Vec<f64>) -> Result<()> {
+pub fn write_csv_xy(csv_file: &str, x: &[f64], y: &[f64]) -> Result<()> {
     let mut wtr = csv::Writer::from_path(csv_file)?;
     wtr.write_record(&["wl[nm]", "spd[-]"])?;
     for (&x,&y) in x.iter().zip(y.iter()) {

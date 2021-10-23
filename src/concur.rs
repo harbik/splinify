@@ -80,7 +80,7 @@ impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
         if m<2 {return Err(DierckxError(201).into())};
         let mx = m * idim;
         if xn.len() as i32!= mx { return Err(DierckxError::new(202).into())}
-        let w = vec![1.0;m as usize];
+        let w_vec = vec![1.0;m as usize];
 
         let xb = Vec::new();
         let ib = 0;
@@ -91,16 +91,16 @@ impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
 
         let nest = m+k+1 + 2*(k-1); 
         let n = nest;  // length of tc
-        let t = vec![0.0; nest as usize];
-        let c = vec![0.0; (nest * idim) as usize];
+        let t_vec = vec![0.0; nest as usize];
+        let c_vec = vec![0.0; (nest * idim) as usize];
 
-        let iwrk = vec![0i32; nest as usize];
+        let iwrk_vec = vec![0i32; nest as usize];
 
-        let wrk = vec![0f64; (m*(k+1)+nest*(6+idim+3*k)) as usize];
-        let xx = vec![0.0; (idim*m) as usize];
-        let cp = vec![0.0; (2 * (k+1) * idim) as usize];
+        let wrk_vec = vec![0f64; (m*(k+1)+nest*(6+idim+3*k)) as usize];
+        let xx_vec = vec![0.0; (idim*m) as usize];
+        let cp_vec = vec![0.0; (2 * (k+1) * idim) as usize];
 
-        Ok(Self { u, xn, w, xb, xe, t, c, wrk, iwrk, xx, cp, ib, ie, m, mx, nest, k, idim, n, e_rms: None})
+        Ok(Self { u, xn, w: w_vec, xb, xe, t: t_vec, c: c_vec, wrk: wrk_vec, iwrk: iwrk_vec, xx: xx_vec, cp: cp_vec, ib, ie, m, mx, nest, k, idim, n, e_rms: None})
 
     }
 
@@ -333,8 +333,18 @@ impl<const K:usize, const N:usize> From<ParameterCurveSplineFit<K,N>> for Spline
     fn from(mut sp: ParameterCurveSplineFit<K,N>) -> Self {
         sp.t.truncate(sp.n as usize);
         sp.t.shrink_to_fit();
-        sp.c.truncate((sp.n*sp.idim) as usize); // n-k-1 !!!
+
+        sp.c.truncate((sp.n*sp.idim) as usize); // this is the size as returned, but this conains K+1 unused values at the end
+
+        /* Attempt to drop the 0.0 values at the end but Dierckx `curev` does not support the drained version...
+        for dim in 0..sp.idim as usize {
+            let ib = (dim+1) * (sp.n-sp.k-1) as usize;
+            let ie = ib + sp.k as usize + 1;
+            sp.c.drain(ib..ie);
+        }
+        */
         sp.c.shrink_to_fit();
+
         Spline::with_e_rms(
             sp.t,
             sp.c,

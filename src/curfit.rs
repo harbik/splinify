@@ -36,21 +36,21 @@ impl<const K:usize> CurveSplineFit<K> {
     pub fn new(x: Vec<f64>, y: Vec<f64>) -> Self {
 
         let m = x.len();
-        let w = vec![1.0; m];
+        let w_vec = vec![1.0; m];
         assert!(y.len()==m);
-        assert!(w.len()==y.len());
+        assert!(w_vec.len()==y.len());
 
         let nest = m * K  + 1;
-        let t = vec![0.0;nest];
-        let c = vec![0.0;nest];
+        let t_vec = vec![0.0;nest];
+        let c_vec = vec![0.0;nest];
         let n = nest as i32;
 
-        let iwrk = vec![0i32; nest];
+        let iwrk_vec = vec![0i32; nest];
 
         let lwrk = m * (K + 1) + nest * (7 + 3 * K);
-        let wrk = vec![0f64; lwrk];
+        let wrk_vec = vec![0f64; lwrk];
 
-        Self { x, y, w, t, c, n, wrk, iwrk, e_rms: None}
+        Self { x, y, w: w_vec, t: t_vec, c: c_vec, n, wrk: wrk_vec, iwrk: iwrk_vec, e_rms: None}
 
     }
 
