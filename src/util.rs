@@ -1,6 +1,7 @@
 use super::{Result, Spline};
 use csv::ReaderBuilder;
 use plotters::prelude::*;
+use bitflags::bitflags;
 
 pub fn plot<const K: usize>(
     filepath: &str,
@@ -12,14 +13,23 @@ pub fn plot<const K: usize>(
     let y_min = y.iter().cloned().fold(y[0], f64::min);
     let y_height = y_max - y_min;
 
-    let y_s = s.evaluate(&x)?;
+   // let y_s = s.evaluate(&x)?;
+    let y_s = s.eval_n(&x)?;
 
     let spline_color = HSLColor(0.5, 0.5, 0.4);
     //let spline_coef_color = HSLColor(0.05, 0.5, 0.4);
 
-    let root = BitMapBackend::new(filepath, (2000, 1000)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root).margin(50).build_cartesian_2d(
+    let mut root = BitMapBackend::new(filepath, (2000, 1000));
+    root.draw_rect((0,0), (2000,1000), &WHITE, true)?;
+
+    let chartarea= root
+        .into_drawing_area()
+        .margin(100, 100, 100, 100);
+    chartarea.fill(&HSLColor(0.1, 0.5, 0.95))?;
+    //root.fill(&WHITE)?;
+    let mut chart = ChartBuilder::on(&chartarea)
+        .margin(50)
+        .build_cartesian_2d(
         x[0]..x[x.len() - 1],
         y_min - y_height / 10.0..y_max + y_height / 10.0,
     )?;
@@ -47,26 +57,41 @@ pub fn plot<const K: usize>(
         format!("{} knots", s.t.len())
     };
 
-    root.draw(
-        &(EmptyElement::at((1550, 100))
+    chartarea.draw(
+        &(EmptyElement::at((1450, 100))
             + Text::new(
                 leg_txt,
                 (0, 0),
                 &"sans-serif".into_font().resize(40.0).color(&spline_color),
             )),
     )?;
-    root.present()?;
+    chartarea.present()?;
     Ok(())
 }
 
+
+bitflags! {
+    pub struct Plot2DFlags: u32 {
+        const SPLINE =          0b00000001;
+        const LEGEND =          0b00000010;
+        const DATA =            0b00000100;
+        const PLOT_KNOTS =      0b00001000;
+        const KNOTS_FILLED =    0b00010000;
+        const ALL=              0b00011111;
+    }
+}
+
+
+
 /// Plots a two-dimensional (xy) spline curve, its knots, and 
 ///  
-pub fn plot2d<const K: usize>(
+pub fn plot2d<const K: usize, const N: usize>(
     filepath: &str,
-    s: Spline<K,2>,
+    s: Spline<K,N>,
     u: Vec<f64>,
     x: Vec<f64>,
     y: Vec<f64>,
+    flags: Option<Plot2DFlags>,
 ) -> Result<()> {
     let x_max = x.iter().cloned().reduce(f64::max).unwrap();
     let x_min = x.iter().cloned().reduce(f64::min).unwrap();
@@ -74,54 +99,75 @@ pub fn plot2d<const K: usize>(
     let y_min = y.iter().cloned().reduce(f64::min).unwrap();
     let width = x_max - x_min;
     let height = y_max - y_min;
+    let flags = flags.unwrap_or(Plot2DFlags::ALL);
 
 
     let spline_color = HSLColor(0.5, 0.5, 0.4);
     //let spline_coef_color = HSLColor(0.05, 0.5, 0.4);
 
-    let root = BitMapBackend::new(filepath, (2000, 1000)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root).margin(50).build_cartesian_2d(
+    let mut chartarea = BitMapBackend::new(filepath, (2000, 1000)).into_drawing_area();
+    chartarea.fill(&WHITE)?;
+    chartarea = chartarea.margin(100, 100, 100, 100);
+    chartarea.fill(&HSLColor(0.1, 0.5, 0.95))?;
+
+    let mut chart = ChartBuilder::on(&chartarea).margin(50).build_cartesian_2d(
         x_min - width / 10.0..x_max + width / 10.0,
         y_min - height / 10.0..y_max + height / 10.0,
     )?;
 
+
     // draw the mesh
     chart.configure_mesh().draw()?;
 
-    // plot the knots, as represented in spline c
-    let c_x = &s.c[0..s.c.len()/2-(K+1)];
-    let c_y = &s.c[s.c.len()/2..s.c.len()-(K+1)];
-    chart.draw_series(
-        c_x.iter().zip(c_y.iter())
-     .map(|(&x, &y)|Circle::new((x,y), 8, spline_color.stroke_width(2))),
-    )?;
+    if flags.contains(Plot2DFlags::PLOT_KNOTS) || flags.contains(Plot2DFlags::KNOTS_FILLED) {
+        // plot the knots, as represented in spline c
+        let c_x = &s.c[0..s.c.len()/2-(K+1)];
+        let c_y = &s.c[s.c.len()/2..s.c.len()-(K+1)];
+        if flags.contains(Plot2DFlags::KNOTS_FILLED) {
+            chart.draw_series(
+                c_x.iter().zip(c_y.iter())
+                .map(|(&x, &y)|Circle::new((x,y), 10, spline_color.filled())),
+            )?;
+        } else {
+            chart.draw_series(
+                c_x.iter().zip(c_y.iter())
+                .map(|(&x, &y)|Circle::new((x,y), 10, spline_color.stroke_width(2))),
+            )?;
+        }
+    }
+
+    if flags.contains(Plot2DFlags::SPLINE) {
+        // spline 
+        let s_xy = s.eval_n(&u)?;
+        chart.draw_series(LineSeries::new(
+            s_xy.chunks(2).map(|xy|(xy[0],xy[1])),
+            spline_color.mix(1.0).stroke_width(5)))?;
+    }
 
 
-    // plot fitted curve
-    let s_xy = s.eval_n(&u)?;
-    chart.draw_series(LineSeries::new(
-        s_xy.chunks(2).map(|xy|(xy[0],xy[1])),
-        spline_color.mix(1.0).stroke_width(5)))?;
-
-    // plot the original input data used for spline fitting
-    chart.draw_series(LineSeries::new(
-        x.iter().cloned().zip(y.iter().cloned()),
-        BLACK.mix(1.0).stroke_width(2),
-    ))?;
-
-    let leg_txt = if let Some(e) = s.e {
-        format!("{} knots  {:.1e} rms", s.t.len(), e)
-    } else {
-        format!("{} knots", s.t.len())
+    if flags.contains(Plot2DFlags::DATA) {
+        // plot the original input data used for spline fitting
+        chart.draw_series(LineSeries::new(
+            x.iter().cloned().zip(y.iter().cloned()),
+            BLACK.mix(1.0).stroke_width(2),
+        ))?;
     };
 
-    root.draw(
-        &(EmptyElement::at((1550, 100))
-            + Text::new( leg_txt, (0, 0), &"sans-serif".into_font().resize(40.0).color(&spline_color),
-            )),
-    )?;
-    root.present()?;
+    if flags.contains(Plot2DFlags::LEGEND) {
+        let leg_txt = if let Some(e) = s.e {
+            format!("{} knots  {:.1e} rms", s.t.len(), e)
+        } else {
+            format!("{} knots", s.t.len())
+        };
+
+        chartarea.draw(
+            &(EmptyElement::at((1550, 100))
+                + Text::new( leg_txt, (0, 0), &"sans-serif".into_font().resize(40.0).color(&spline_color),
+                )),
+        )?;
+    }
+
+    chartarea.present()?;
     Ok(())
 }
 

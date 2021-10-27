@@ -1,5 +1,5 @@
 
-use dierckx::{ParameterCurveSplineFit, Result, read_csv_xy, plot};
+use splinify::{ParameterCurveSplineFit, Result, read_csv_xy, plot};
 
 
 

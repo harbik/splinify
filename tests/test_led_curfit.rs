@@ -1,5 +1,5 @@
 
-use dierckx::{CubicCurveFit, CurveSplineFit, ParameterCurveSplineFit, Result, read_csv_xy, plot};
+use splinify::{CubicCurveFit, CurveSplineFit, ParameterCurveSplineFit, Result, read_csv_xy, plot};
 
 #[test]
 fn test_smoothing() -> Result<()> {

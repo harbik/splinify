@@ -1,52 +1,74 @@
-# Dierckx' FITPACK B-Spline Fortran Library Wrapper
 
-Dierckx is a Fortran library for fitting curve and surface *B-Splines* to sets of data points.  It was written by Paul
-Dierckx in the mid 1980s, and it is still the most advanced general B-spline fitting library today.
-It is based on a solid mathematical foundation, implements many advanced algorithms, as described in detail in Paul Dierckx' book:
+# Splinify: Fit Curve and Surface Splines
+<center>
+    <br>
+    <img src="https://www.harbik.com/img/dierckx/lissajous.png"/>
+    <br>
+    <i>A Splinify generated b-Spline curve, with 15 control points</i>
+</center>
+  
+# Introduction
+    
+*Warning: this library uses a Fortran library as fitting engine, and requires ---in addition to Rust--- a [Fortran](#fortran) compiler*
+
+Splinify fits curve and surface *B-Splines* to sets of data points,
+    using Dierckx' Fortran FITPACK library written by Paul Dierckx in the mid 1980s.
+Dierckx' library is still one of the the most advanced general B-spline fitting libraries available today ---
+    its mathematical foundations and algorithms are described in detail in Paul Dierckx' book:
 [Curve and Surface Fitting with Splines](https://www.google.com/books/edition/Curve_and_Surface_Fitting_with_Splines/-RIQ3SR0sZMC?hl=en "Paul Dierckx, Curve and Surface Fitting with Splines, Oxford University Press, 1993").
 
-With all its features, and being programmed in a somewhat limited language (at least as concerned to API design), 
-Dierckx' FITPACK is difficult to use:
-for example, its `concur` subroutine has 28 numerical arguments!
+With all its features --- and being programmed in a somewhat limited language, at least as concerned to API design ---
+    Dierckx' FITPACK is difficult to use:
+    for example, its `concur` subroutine has 28 numerical arguments!
+This aim of this library is to make it more accessible from Rust by implementing a high level *Rustacean* application interface.
 
-This aim of this library is to make the Dierckx library more accessible from Rust,
-by implementing a foreign function interface,
-and by defining and implementing high level *Rustacean* application interface.
+Its intended use is scientific analysis and modeling, for example to represent spectral distributions in colorimetry,
+or to interpolate positional data and use spline derivatives to get speed and acceleration of moving objects in one or more dimensions.
 
 Although Dierckx' Fortran library covers fitting a spline evaluation methods for Univariate and Bivariate B-Splines,
-currently this library only covers **univariate, or single input-parameter fitting methods**.
+    currently only its **univariate, or single input-parameter fitting methods** are implemented.
 
 
-# Usage
-
-This functionality of this library is split in two crates:
-
-- the first crate is `dierckx-sys` containing the foreign function Rust interfaces, and Dierckx' Fortran source files,
-- and the second is this crate, `dierckx`, which implements the higher level Rust object models, and associated methods.
+# Fortran
 
 As this crate is a Fortran wrapper, you need a Fortran compiler on your system to use it:
-in specific, at the moment, it requires the Gnu Fortran **GFortran** to be installed.
-See [Installing GFortran](https://fortran-lang.org/learn/os_setup/install_gfortran) how to do this on your machine.
+in specific it requires the Gnu Fortran **GFortran** to be installed.
+See [Installing GFortran](https://fortran-lang.org/learn/os_setup/install_gfortran) for instructions.
 
-Having to install a Fortran compiler is a big restriction, so I recommend not using it as a dependency in big projects.
+Having to install a Fortran compiler is a big restriction, so I recommend not using it as a dependency in projects for generic use.
+
+
+# Instructions
+
+Splinify is part of a family of three crates:
+
+- **splinify** fits (non-uniform) [B-Spline](b-splines) curves to input data,
+and results in a fitted as a `spliny`-crate `CurveSpline`.
+Data inputs are `x` and `y` vectors for 1 dimensional curves,
+and `u` and `xyn` vectors in case of N-dimensional curves.
+
+- Use **spliny** to to use the generated splines, for example to calculate curve coordinates, or a spline-curve's derivatives.
+This package also implements basic tools for input and output of spline representations in form of JSON files, and spline plots.
+It is completely written in Rust, and does **not** require a Fortran compiler. 
+
+- **dierckx-sys** contains Fortran foreign function interfaces to Paul Dierckx' FITPACK library. 
+It is used by `splinify`, but ---unless you want to explore Paul Dierckx library yourself--- can be ignored as concerned to using `splinify` and `spliny`.
+
 
 To use this library add this to your `Cargo.toml` file:
 
 ```
 [dependencies]
-dierckx = "0.0.1"
+splinify= "0.1"
 ```
 
 # Examples
 
 
-```
 
-```
 
-<div style="text-align:center;">
-<img src="https://www.harbik.com/img/dierckx/led26.png" style="width:80%;"/>
-</div>
+
+
 
 
 # B-Splines
@@ -102,6 +124,7 @@ To avoid using type parameters, the following type aliases have been defined:
 
 - **Type aliases for `CurveSplineFit<K>`**
 
+
 |      Alias            | K |
 |-----------------------|:-:|
 |`LinearSplineFit`      | 1 |
@@ -134,7 +157,7 @@ To use a constrained spline-fit for one-dimensional curves,
 
 
 
-# Spline-Fit Types
+# Spline Fit Types
 
 For a dataset, the following spline-types can be generated:
 
@@ -156,17 +179,9 @@ A weighting factor can be added to each datapoint too, to limit the effect of th
 
 
 
-# Spline` Spline Represenations
-The result of the spline fits is an array of knot locations, 
- consist of curves as single input parameter values,
- and *N* ---for each dimension one--- coefficient values.
- 
-In this library these are represented by a `Spline<K,N>` object,
- with *K* the spline degree, 
- *N* the space dimension,
- and containing two vectors,
- a vector *t*, containing the knot locations,
- and a vector *c*, containing the spline coefficients.
+# Curve Splines
+The result of a`Splinify` spline fit is a `Spliny` `CurveSpline<K,N>` object ---a wrapper for an vector of knots, and
+fit coefficients--- with *K* the spline degree, *N* the space dimension of the curve spline.
 
 For convenience, the following aliases have been defined:
 
