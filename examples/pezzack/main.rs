@@ -7,6 +7,7 @@ fn main() -> Result<()> {
     std::env::set_current_dir(std::path::Path::new(file!()).parent().unwrap())?;   
 
     let (x,y) =  read_csv_xy("pezzack_noisy.csv")? ;
+    let xy = x.iter().zip(y.iter()).flat_map(|(x,y)|[*x,*y]).collect();
 
     let d = 
     ParameterCurveSplineFit::<5,1>::new(x.clone(), y.clone())?
@@ -17,7 +18,7 @@ fn main() -> Result<()> {
     let json = serde_json::to_string_pretty(&d)?;
     println!("{}", json);
 
-    plot("fit.png", x, y, d)?;
+    d.plot_with_control_points_and_data("fit.png", (1500,1000), xy)?;
 
     Ok(())
 }

@@ -1,6 +1,6 @@
 use std::iter::repeat;
 use dierckx_sys::{curfit_};
-use super::{Spline, DierckxError};
+use super::{Spline, FitError};
 use crate::Result;
 
 
@@ -59,7 +59,7 @@ impl<const K:usize> CurveSplineFit<K> {
             self.w = weights;
             Ok(self)
         } else {
-            Err(DierckxError(203).into())
+            Err(FitError(203).into())
         }
     }
 
@@ -107,7 +107,7 @@ impl<const K:usize> CurveSplineFit<K> {
         let tb = (self.x[0]/dt).ceil() * dt;
         let te = (self.x[m-1]/dt).floor() * dt;
         let n = ((te - tb)/dt).round() as usize;
-        if n == 0 { return Err(DierckxError(205).into())};
+        if n == 0 { return Err(FitError(205).into())};
         let n = n + 2; 
         let t: Vec<f64> = 
             repeat(tb).take(K)
@@ -128,7 +128,7 @@ impl<const K:usize> CurveSplineFit<K> {
         if ierr<=0  {
             Ok(self.into())
         } else {
-            Err(DierckxError(ierr).into())
+            Err(FitError(ierr).into())
         }
     }
 
@@ -140,7 +140,7 @@ impl<const K:usize> CurveSplineFit<K> {
         if ierr<=0  {
             Ok(self.into())
         } else {
-            Err(DierckxError(ierr).into())
+            Err(FitError(ierr).into())
         }
     }
 
@@ -155,7 +155,7 @@ impl<const K:usize> CurveSplineFit<K> {
         if ierr<=0  {
             Ok(self.into())
         } else {
-            Err(DierckxError(ierr).into())
+            Err(FitError(ierr).into())
         }
     }
 }

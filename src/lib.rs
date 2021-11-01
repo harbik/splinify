@@ -42,13 +42,13 @@ pub type CubicSplineFit3D = ParameterCurveSplineFit<3,3>;
 pub type QuinticSplineFit3D = ParameterCurveSplineFit<5,3>;
 
 #[derive(Debug, Clone)]
-pub struct DierckxError(i32);
+pub struct FitError(i32);
 
-impl DierckxError {
+impl FitError {
     fn new(ierr: i32) -> Self { Self(ierr) }
 }
 
-impl fmt::Display for DierckxError {
+impl fmt::Display for FitError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self.0 {
             // Dierckx
@@ -75,5 +75,5 @@ impl fmt::Display for DierckxError {
 }
 
 
-impl error::Error for DierckxError {}
+impl error::Error for FitError {}
 

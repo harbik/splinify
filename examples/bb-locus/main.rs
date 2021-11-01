@@ -1,5 +1,5 @@
 
-use splinify::{ParameterCurveSplineFit, Result, read_csv_uxy, plot2d, Plot2DFlags};
+use splinify::{ParameterCurveSplineFit, Result, read_csv_uxy};
 
 fn main() -> Result<()> {
 
@@ -17,8 +17,7 @@ fn main() -> Result<()> {
     let json = serde_json::to_string_pretty(&d)?;
     println!("{}", json);
 
-    plot2d("fit.png",d, u, x, y, Some(Plot2DFlags::SPLINE))?;
-
+    d.plot("fit.png", (2000,1000), &u, Some(&xy))?;
 
     Ok(())
 }

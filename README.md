@@ -5,6 +5,8 @@
     <img src="https://www.harbik.com/img/dierckx/lissajous.png"/>
     <br>
     <i>A Splinify generated b-Spline curve, with 15 control points</i>
+    <br>
+    <i>See <a href="https://github.com/harbik/splinify/tree/main/examples/lissajous">lissajous</a> example for how this was generated</i> 
 </center>
   
 # Introduction
@@ -179,22 +181,5 @@ A weighting factor can be added to each datapoint too, to limit the effect of th
 
 
 
-# Curve Splines
-The result of a`Splinify` spline fit is a `Spliny` `CurveSpline<K,N>` object ---a wrapper for an vector of knots, and
-fit coefficients--- with *K* the spline degree, *N* the space dimension of the curve spline.
-
-For convenience, the following aliases have been defined:
-
-|          Alias        | K | N |
-|-----------------------|:-:|:-:|
-| `LinearSpline`        | 1 | 1 |
-| `CubicSpline`         | 3 | 1 |
-| `QuinticSpline`       | 5 | 1 |
-| `LinearSpline2D`      | 1 | 2 |
-| `CubicSpline2D`       | 3 | 2 |
-| `QuinticSpline2D`     | 5 | 2 |
-| `LinearSpline3D`      | 1 | 3 |
-| `CubicSpline3D`       | 3 | 3 |
-| `QuinticSpline3D`     | 5 | 3 |
 
 

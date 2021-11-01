@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-dierckx-sys = {git = "https://github.com/harbik/dierckx-sys", version = "0.0.1"}
+spliny = {git = "https://github.com/harbik/spliny", version = "0.1"}
+dierckx-sys = {git = "https://github.com/harbik/dierckx-sys", version = "0.1"}
 csv = "1.1"
 plotters = "0.3"
 serde = {version = "1.0", features = ["derive"]}

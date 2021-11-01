@@ -14,7 +14,7 @@ fn test_smoothing() -> Result<()> {
     let json = serde_json::to_string_pretty(&d)?;
     println!("{}", json);
 
-    plot("tests/img/curfit-smooth.png",x,y,d)?;
+//    plot("tests/img/curfit-smooth.png",x,y,d)?;
 
 
     Ok(())
@@ -23,7 +23,7 @@ fn test_smoothing() -> Result<()> {
 #[test]
 fn test_cardinal() -> Result<()> {
 
-    let (x,y) =  read_csv_xy("tests/leds4000.csv")? ;
+    let (x,y) =  read_csv_xy("tests/data/leds4000.csv")? ;
 
     let d = CubicCurveFit::new(x.clone(), y.clone());
     let tc = d.cardinal_spline(10.0)?;
@@ -37,40 +37,21 @@ fn test_cardinal() -> Result<()> {
 
 #[test]
 fn test_interpolating_spline() -> Result<()> {
-    use plotters::prelude::*;
-
 
     let x: Vec<f64> = (0..=180).map(|i|(i as f64).to_radians()).collect();
-    let y: Vec<f64> = x.iter().map(|x|x.sin().powi(8)).collect();
-    let x_data: Vec<f64> = (0..=180).step_by(20).map(|i|(i as f64).to_radians()).collect();
-    let y_data: Vec<f64> = x_data.iter().map(|x|x.sin().powi(8)).collect();
+    let xy: Vec<f64> = x.iter().flat_map(|&x|[x,x.sin().powi(8)]).collect();
 
-    let root = BitMapBackend::new("interpolating_spline.png", (2000, 1000)).into_drawing_area();
-    root.fill(&WHITE)?;
-    let mut chart = ChartBuilder::on(&root)
-        .margin(50)
-        .caption("Interpolating", ("sans-serif",24))
-        .build_cartesian_2d(0f64..180f64.to_radians(), 0.0..1.0)?;
-    chart.configure_mesh().draw()?;
-    chart.draw_series(x_data.iter().cloned().zip(y_data.iter().cloned()).map(|xy| Circle::new(xy, 5, RED.filled())))?;
-    // CurveFit test
-    //  let d = CurveFit::<3>::new(x_data, y_data);
-    // let y_fit = d.interpolating_spline()?.evaluate(&x)?;
+    let x_data: Vec<f64> = (0..=180).step_by(30).map(|i|(i as f64).to_radians()).collect();
+    let xy_data: Vec<f64> = x_data.iter().flat_map(|&x|[x,x.sin().powi(8)]).collect();
 
     // ConstrainedSpline test
-    let y_fit =
-        ParameterCurveSplineFit::<3,1>::new(x_data, y_data.clone())?
-            .begin_constraints([ [y_data[0]], [0.0], [0.0]])?
-            .end_constraints([ [y_data[y_data.len()-1]], [0.0], [0.0] ])?
-            .interpolating_spline()?
-            .evaluate(&x)?;
-    chart.draw_series(LineSeries::new(x.iter().cloned().zip(y_fit.iter().cloned()), &HSLColor(0.5, 1.0, 0.5)))?;
-    chart.draw_series(LineSeries::new(x.iter().cloned().zip(y.iter().cloned()), &BLACK))?;
-
-   
-    root.present()?;
-
-
+    let int_spline =
+        ParameterCurveSplineFit::<3,2>::new(x_data, xy_data.clone())?
+            .begin_constraints([ [xy_data[0], xy_data[1]], [0.0, 0.0], [0.0, 0.0]])?
+            .end_constraints([ [xy_data[xy_data.len()-2],xy_data[xy_data.len()-1]],  [0.0, 0.0], [0.0, 0.0] ])?
+            .interpolating_spline()?;
+    
+    int_spline.plot_with_control_points_and_data("fit.png", (2000,1000), &xy)?;
     Ok(())
 }
 
@@ -78,17 +59,21 @@ fn test_interpolating_spline() -> Result<()> {
 #[test]
 fn constrained_cardinal_spline() -> Result<()> {
 
-    let (x,y) =  read_csv_xy("tests/leds4000.csv")? ;
+    let (x,y) =  read_csv_xy("tests/data/leds4000.csv")? ;
+
+    let mut xy: Vec<f64> = Vec::new();
+    x.iter().zip(y.iter()).for_each(|(x,y)| xy.extend([x,y]));
 
     let cs = ParameterCurveSplineFit::<5,1>::new(x.clone(), y.clone())?;
     let tc = cs
        .begin_constraints([[y[0]],[0.0], [0.0]])?
        .end_constraints([[y[y.len()-1]], [0.0], [0.0]])?
-       .cardinal_spline(5.0)?;
+       .cardinal_spline(10.0)?;
      
     println!("knots {:?}", tc.t);
     println!("number of knots: {}", tc.t.len());
-    println!("fp: {:?}", tc.e.unwrap());
+
+    tc.plot("fit.png", (2000,1000))?;
 
     Ok(())
 }

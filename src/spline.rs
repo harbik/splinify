@@ -1,5 +1,5 @@
 
-use super::{DierckxError, Result};
+use super::{FitError, Result};
 use dierckx_sys::{splev_, curev_};
 use serde::{Deserialize, Serialize};
 
@@ -134,7 +134,7 @@ impl<const K:usize, const N:usize> Spline<K, N>  {
         if ierr<=0 {
             Ok(y)
         } else {
-            Err(DierckxError::new(ierr).into())
+            Err(FitError::new(ierr).into())
         }
     }
 
