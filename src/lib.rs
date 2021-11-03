@@ -10,8 +10,7 @@ pub use curfit::*;
 pub mod concur;
 pub use concur::*;
 
-//pub mod spline;
-//pub use spline::*;
+pub mod dierckx_val;
 
 pub mod util;
 pub use util::*;
