@@ -1,14 +1,11 @@
 use std::iter::repeat;
 use dierckx_sys::{curfit_};
-use super::{Spline, FitError};
+use spliny::SplineCurve;
+use super::{FitError};
 use crate::Result;
 
 
-pub type CubicCurveFit = CurveSplineFit::<3>;
-pub type QuinticCurveFit = CurveSplineFit::<5>;
-
-
-pub struct CurveSplineFit<const K:usize> {
+pub struct SplineCurveFit<const K:usize> {
     // input values
     x: Vec<f64>,    // data x coordinates
     y: Vec<f64>,    // data y coordinates
@@ -26,7 +23,7 @@ pub struct CurveSplineFit<const K:usize> {
 }
 
 
-impl<const K:usize> CurveSplineFit<K> {
+impl<const K:usize> SplineCurveFit<K> {
 
     /**
      Constructor, with inputs x and y vectors, and an optional weights vectors.
@@ -77,6 +74,7 @@ impl<const K:usize> CurveSplineFit<K> {
         let mut ierr = 0;
 
         if let Some(knots) = knots {
+            self.n = knots.len() as i32;
             self.t = knots;
         }
         unsafe {
@@ -102,27 +100,32 @@ impl<const K:usize> CurveSplineFit<K> {
      * and aligned to integer multiples of it. Knots cover the range within
      * the bounds of x.
      */
-    pub fn cardinal_spline(mut self, dt:f64) -> Result<Spline<K,1>>{
+    pub fn cardinal_spline(mut self, dt:f64) -> Result<SplineCurve<K,1>>{
         let m = self.x.len();
         let tb = (self.x[0]/dt).ceil() * dt;
         let te = (self.x[m-1]/dt).floor() * dt;
         let n = ((te - tb)/dt).round() as usize;
         if n == 0 { return Err(FitError(205).into())};
-        let n = n + 2; 
-        let t: Vec<f64> = 
-            repeat(tb).take(K)
+
+        let mut t: Vec<f64> = Vec::with_capacity(n + 2 * (K + 1) + 1);
+        t.extend( repeat(tb).take(K+1) // begin padding, needed for spline evaluation
             .chain(
-                repeat(dt).take(n).scan(tb, 
+                repeat(dt).scan(tb, 
                     |s, dx|{
                         let t=*s; 
                         *s+=dx; 
-                        Some(t)
+                        if t<=te {
+                            Some(t)
+                        } else {
+                            None
+                        }
                     })
             )
             .chain(
-                repeat(te).take(K)
+                repeat(te).take(K+1) // end padding
             )
-            .collect();
+        );
+
 
         let ierr = self.curfit(-1, Some(0.0),Some(t));
         if ierr<=0  {
@@ -135,7 +138,7 @@ impl<const K:usize> CurveSplineFit<K> {
     /**
      Interpolating Spline
      */ 
-    pub fn interpolating_spline(mut self) -> Result<Spline<K,1>> {
+    pub fn interpolating_spline(mut self) -> Result<SplineCurve<K,1>> {
         let ierr = self.curfit(0, Some(0.0),None);
         if ierr<=0  {
             Ok(self.into())
@@ -150,7 +153,7 @@ impl<const K:usize> CurveSplineFit<K> {
      * A spline with a minimal number of knots, with error less than the specifed rms value.
      * Repeat fit with smaller rms value using `smooth_more`.
      */
-    pub fn smoothing_spline(mut self, rms: f64) -> Result<Spline<K,1>>{
+    pub fn smoothing_spline(mut self, rms: f64) -> Result<SplineCurve<K,1>>{
         let ierr = self.curfit(0, Some(rms), None);
         if ierr<=0  {
             Ok(self.into())
@@ -159,6 +162,8 @@ impl<const K:usize> CurveSplineFit<K> {
         }
     }
 }
+
+/*
 
 impl<const K:usize> From<CurveSplineFit<K>> for Spline<K,1> {
     fn from(mut sp: CurveSplineFit<K>) -> Self {
@@ -174,3 +179,21 @@ impl<const K:usize> From<CurveSplineFit<K>> for Spline<K,1> {
         )
     }
 }
+*/
+
+impl<const K:usize> From<SplineCurveFit<K>> for SplineCurve<K,1> {
+    fn from(mut sp: SplineCurveFit<K>) -> Self {
+        sp.t.truncate(sp.n as usize); // sp.n number of required knots 
+        sp.t.shrink_to_fit();
+
+        sp.c.truncate(sp.n as usize - (K + 1)); // this is the size as returned, but this conains K+1 unused values at the end
+        sp.c.shrink_to_fit();
+
+        Self::new(
+            sp.t,
+            sp.c,
+
+        )
+    }
+}
+

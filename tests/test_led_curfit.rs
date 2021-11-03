@@ -1,20 +1,19 @@
 
-use splinify::{CubicCurveFit, CurveSplineFit, ParameterCurveSplineFit, Result, read_csv_xy, plot};
+use splinify::{CubicSplineFit, SplineCurveFit, ParameterSplineCurveFit, Result, read_csv_xy};
 
 #[test]
 fn test_smoothing() -> Result<()> {
     let (x,y) =  read_csv_xy("tests/data/leds4000.csv")? ;
 
-    let d = CurveSplineFit::<3>::new(x.clone(), y.clone());
+    let d = SplineCurveFit::<3>::new(x.clone(), y.clone());
     let d = d.smoothing_spline(0.01)?;
     println!("knots {:?}", d.t);
     println!("number of knots: {}", d.t.len());
-    println!("fp: {:?}", d.e);
 
     let json = serde_json::to_string_pretty(&d)?;
     println!("{}", json);
 
-//    plot("tests/img/curfit-smooth.png",x,y,d)?;
+    d.plot("tests/img/curfit-smooth.png",(1600,800))?;
 
 
     Ok(())
@@ -25,11 +24,11 @@ fn test_cardinal() -> Result<()> {
 
     let (x,y) =  read_csv_xy("tests/data/leds4000.csv")? ;
 
-    let d = CubicCurveFit::new(x.clone(), y.clone());
+    let d = CubicSplineFit::new(x.clone(), y.clone());
     let tc = d.cardinal_spline(10.0)?;
     println!("knots {:?}", tc.t);
     println!("number of knots: {}", tc.t.len());
-    println!("fp: {:?}", tc.e);
+    tc.plot("fit.png", (1600,800))?;
 
     Ok(())
 }
@@ -46,7 +45,7 @@ fn test_interpolating_spline() -> Result<()> {
 
     // ConstrainedSpline test
     let int_spline =
-        ParameterCurveSplineFit::<3,2>::new(x_data, xy_data.clone())?
+        ParameterSplineCurveFit::<3,2>::new(x_data, xy_data.clone())?
             .begin_constraints([ [xy_data[0], xy_data[1]], [0.0, 0.0], [0.0, 0.0]])?
             .end_constraints([ [xy_data[xy_data.len()-2],xy_data[xy_data.len()-1]],  [0.0, 0.0], [0.0, 0.0] ])?
             .interpolating_spline()?;
@@ -64,7 +63,7 @@ fn constrained_cardinal_spline() -> Result<()> {
     let mut xy: Vec<f64> = Vec::new();
     x.iter().zip(y.iter()).for_each(|(x,y)| xy.extend([x,y]));
 
-    let cs = ParameterCurveSplineFit::<5,1>::new(x.clone(), y.clone())?;
+    let cs = ParameterSplineCurveFit::<5,1>::new(x.clone(), y.clone())?;
     let tc = cs
        .begin_constraints([[y[0]],[0.0], [0.0]])?
        .end_constraints([[y[y.len()-1]], [0.0], [0.0]])?

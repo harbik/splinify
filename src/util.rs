@@ -1,8 +1,9 @@
-use super::{Result, Spline};
+use super::{Result, /*Spline*/};
 use csv::ReaderBuilder;
-use plotters::prelude::*;
-use bitflags::bitflags;
+//use plotters::prelude::*;
+//use bitflags::bitflags;
 
+/*
 pub fn plot<const K: usize>(
     filepath: &str,
     x: Vec<f64>,
@@ -170,6 +171,7 @@ pub fn plot2d<const K: usize, const N: usize>(
     chartarea.present()?;
     Ok(())
 }
+*/
 
 pub fn read_csv_xy(csv_file: &str) -> Result<(Vec<f64>, Vec<f64>)> {
     let mut rdr = csv::Reader::from_path(csv_file)?;

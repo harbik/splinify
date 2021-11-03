@@ -15,12 +15,12 @@
 use std::iter::repeat;
 //use crate::dierckx::{concur_};
 use dierckx_sys::{concur_};
-use super::{Spline, FitError};
+use super::{FitError};
 use crate::Result;
 use spliny::SplineCurve;
 
 
-pub struct ParameterCurveSplineFit<const K:usize, const N:usize> {
+pub struct ParameterSplineCurveFit<const K:usize, const N:usize> {
     // input values
     xn: Vec<f64>, // data (x,y,..) coordinates
     u: Vec<f64>,
@@ -56,7 +56,7 @@ pub struct ParameterCurveSplineFit<const K:usize, const N:usize> {
 
  */
 
-impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
+impl<const K:usize, const N:usize> ParameterSplineCurveFit<K, N> {
 
     /// Constructor, taking as input cuve parameter, curve coordinates, and end point constraints, and setting up
     /// remaining datastructures and values for `concur`.
@@ -330,6 +330,8 @@ impl<const K:usize, const N:usize> ParameterCurveSplineFit<K, N> {
 } // impl ParametricCurveSplineFit
 
 
+/*
+
 impl<const K:usize, const N:usize> From<ParameterCurveSplineFit<K,N>> for Spline<K,N> {
     fn from(mut sp: ParameterCurveSplineFit<K,N>) -> Self {
         sp.t.truncate(sp.n as usize);
@@ -354,8 +356,11 @@ impl<const K:usize, const N:usize> From<ParameterCurveSplineFit<K,N>> for Spline
         )
     }
 }
-impl<const K:usize, const N:usize> From<ParameterCurveSplineFit<K,N>> for SplineCurve<K,N> {
-    fn from(mut sp: ParameterCurveSplineFit<K,N>) -> Self {
+*/
+
+
+impl<const K:usize, const N:usize> From<ParameterSplineCurveFit<K,N>> for SplineCurve<K,N> {
+    fn from(mut sp: ParameterSplineCurveFit<K,N>) -> Self {
         sp.t.truncate(sp.n as usize);
         sp.t.shrink_to_fit();
 

@@ -10,8 +10,8 @@ pub use curfit::*;
 pub mod concur;
 pub use concur::*;
 
-pub mod spline;
-pub use spline::*;
+//pub mod spline;
+//pub use spline::*;
 
 pub mod util;
 pub use util::*;
@@ -25,21 +25,21 @@ use std::fmt;
 pub type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
 // Single Output Spline Fit
-pub type LinearSplineFit = CurveSplineFit<1>;
-pub type CubicSplineFit = CurveSplineFit<3>;
-pub type QuinticSplineFit = CurveSplineFit<5>;
+pub type LinearSplineFit = SplineCurveFit<1>;
+pub type CubicSplineFit = SplineCurveFit<3>;
+pub type QuinticSplineFit = SplineCurveFit<5>;
 
 
 // Multi-Output Parametrized Curve Fits
-pub type LinearSplineFit1D = ParameterCurveSplineFit<1,1>;
-pub type CubicSplineFit1D = ParameterCurveSplineFit<3,1>;
-pub type QuinticSplineFit1D = ParameterCurveSplineFit<5,1>;
-pub type LinearSplineFit2D = ParameterCurveSplineFit<1,2>;
-pub type CubicSplineFit2D = ParameterCurveSplineFit<3,2>;
-pub type QuinticSplineFit2D = ParameterCurveSplineFit<5,2>;
-pub type LinearSplineFit3D = ParameterCurveSplineFit<1,3>;
-pub type CubicSplineFit3D = ParameterCurveSplineFit<3,3>;
-pub type QuinticSplineFit3D = ParameterCurveSplineFit<5,3>;
+pub type LinearSplineFit1D = ParameterSplineCurveFit<1,1>;
+pub type CubicSplineFit1D = ParameterSplineCurveFit<3,1>;
+pub type QuinticSplineFit1D = ParameterSplineCurveFit<5,1>;
+pub type LinearSplineFit2D = ParameterSplineCurveFit<1,2>;
+pub type CubicSplineFit2D = ParameterSplineCurveFit<3,2>;
+pub type QuinticSplineFit2D = ParameterSplineCurveFit<5,2>;
+pub type LinearSplineFit3D = ParameterSplineCurveFit<1,3>;
+pub type CubicSplineFit3D = ParameterSplineCurveFit<3,3>;
+pub type QuinticSplineFit3D = ParameterSplineCurveFit<5,3>;
 
 #[derive(Debug, Clone)]
 pub struct FitError(i32);
