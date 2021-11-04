@@ -330,34 +330,6 @@ impl<const K:usize, const N:usize> ParameterSplineCurveFit<K, N> {
 } // impl ParametricCurveSplineFit
 
 
-/*
-
-impl<const K:usize, const N:usize> From<ParameterCurveSplineFit<K,N>> for Spline<K,N> {
-    fn from(mut sp: ParameterCurveSplineFit<K,N>) -> Self {
-        sp.t.truncate(sp.n as usize);
-        sp.t.shrink_to_fit();
-
-        sp.c.truncate((sp.n*sp.idim) as usize); // this is the size as returned, but this conains K+1 unused values at the end
-
-        /* Attempt to drop the 0.0 values at the end but Dierckx `curev` does not support the drained version...
-        for dim in 0..sp.idim as usize {
-            let ib = (dim+1) * (sp.n-sp.k-1) as usize;
-            let ie = ib + sp.k as usize + 1;
-            sp.c.drain(ib..ie);
-        }
-        */
-        sp.c.shrink_to_fit();
-
-        Spline::with_e_rms(
-            sp.t,
-            sp.c,
-            sp.e_rms,
-
-        )
-    }
-}
-*/
-
 
 impl<const K:usize, const N:usize> From<ParameterSplineCurveFit<K,N>> for SplineCurve<K,N> {
     fn from(mut sp: ParameterSplineCurveFit<K,N>) -> Self {
