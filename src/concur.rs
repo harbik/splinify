@@ -20,6 +20,7 @@ use crate::Result;
 use spliny::SplineCurve;
 
 
+#[derive(Clone)]
 pub struct ParameterSplineCurveFit<const K:usize, const N:usize> {
     // input values
     xn: Vec<f64>, // data (x,y,..) coordinates
