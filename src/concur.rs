@@ -214,8 +214,8 @@ impl<const K:usize, const N:usize> ParameterSplineCurveFit<K, N> {
      */
     pub fn cardinal_spline(mut self, dt:f64) -> Result<SplineCurve<K,N>>{
         let m = self.u.len();
-        let tb = (self.u[0]/dt).ceil() * dt;
-        let te = (self.u[m-1]/dt).floor() * dt;
+        let tb = ((self.u[0]+f64::EPSILON)/dt).ceil() * dt; // inner knots should bot be equal
+        let te = ((self.u[m-1]-f64::EPSILON)/dt).floor() * dt;
         let n = ((te - tb)/dt).round() as usize;
         if n == 0 { return Err(FitError(205).into()) };
         let mut t: Vec<f64> = Vec::with_capacity(n + 2 * (K + 1) + 1);
@@ -236,7 +236,6 @@ impl<const K:usize, const N:usize> ParameterSplineCurveFit<K, N> {
                 repeat(te).take(K+1) // end padding
             )
         );
-         //   .collect();
 
         let ierr = self.concur(-1, Some(0.0),Some(t));
         if ierr <= 0 {

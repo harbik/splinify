@@ -33,6 +33,21 @@ fn test_cardinal() -> Result<()> {
     Ok(())
 }
 
+#[test]
+fn test_cardinal_1d() -> Result<()> {
+    use splinify::CubicSplineFit1D;
+    let (x,y) =  read_csv_xy("tests/data/leds4000.csv")? ;
+
+    let d = CubicSplineFit1D::new(x.clone(), y.clone())?;
+    let tc = d.cardinal_spline(10.0)?;
+    println!("knots {:?}", tc.t);
+    println!("number of knots: {}", tc.t.len());
+    tc.plot("fit.png", (1600,800))?;
+
+    Ok(())
+}
+
+
 
 #[test]
 fn test_interpolating_spline() -> Result<()> {
