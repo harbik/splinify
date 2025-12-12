@@ -1,6 +1,6 @@
 [package]
 name = "splinify"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 description = "Rust-wrapper for Dierckx' B-Splines Curve and Surface Fortran Library"
 authors = ["Gerard Harbers", "Harbers Bik LLC"]
@@ -9,13 +9,13 @@ keywords = ["spline", "interpolation", "curve", "smoothing", "fitting"]
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-spliny = {git = "https://github.com/harbik/spliny", version = "0.1"}
-dierckx-sys = {git = "https://github.com/harbik/dierckx-sys", version = "0.1"}
+spliny = {version = "0.2"}
+dierckx-sys = {version = "0.1"}
 csv = "1.1"
-plotters = "0.3"
 serde = {version = "1.0", features = ["derive"]}
 serde_json = "1.0"
 bitflags = "1.3"
 
 [dev-dependencies]
 approx = "0.5"
+plotters = "0.3"
