@@ -10,6 +10,9 @@ pub use curfit::*;
 pub mod concur;
 pub use concur::*;
 
+pub mod clocur;
+pub use clocur::*;
+
 pub mod dierckx_val;
 
 pub mod util;
@@ -39,6 +42,14 @@ pub type QuinticSplineFit2D = ParameterSplineCurveFit<5,2>;
 pub type LinearSplineFit3D = ParameterSplineCurveFit<1,3>;
 pub type CubicSplineFit3D = ParameterSplineCurveFit<3,3>;
 pub type QuinticSplineFit3D = ParameterSplineCurveFit<5,3>;
+
+// Closed Periodic Curve Fits
+pub type ClosedLinearSplineFit2D = ClosedParameterSplineCurveFit<1,2>;
+pub type ClosedCubicSplineFit2D = ClosedParameterSplineCurveFit<3,2>;
+pub type ClosedQuinticSplineFit2D = ClosedParameterSplineCurveFit<5,2>;
+pub type ClosedLinearSplineFit3D = ClosedParameterSplineCurveFit<1,3>;
+pub type ClosedCubicSplineFit3D = ClosedParameterSplineCurveFit<3,3>;
+pub type ClosedQuinticSplineFit3D = ClosedParameterSplineCurveFit<5,3>;
 
 #[derive(Debug, Clone)]
 pub struct FitError(i32);
