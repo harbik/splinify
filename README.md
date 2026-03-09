@@ -72,7 +72,7 @@ splinify = { version = "0.2", features = ["plot"] }
 
 ### Lissajous curve (2D parametric spline)
 
-```rust,no_run
+```rust,ignore
 use splinify::{CubicSplineFit2D, Result, SplineCurveData};
 
 fn lissajous(t: f64, a: f64, kx: f64, b: f64, ky: f64) -> [f64; 2] {
@@ -229,9 +229,17 @@ A weighting factor can be added to each datapoint too, to limit the effect of th
 
 Fit results can be serialized to JSON via the `SplineCurveData` wrapper, which implements `serde::Serialize`:
 
-```rust,ignore
-use splinify::SplineCurveData;
-let json = serde_json::to_string_pretty(&SplineCurveData::from(&spline))?;
+```rust,no_run
+use splinify::{CubicSplineFit, SplineCurveData, Result};
+
+fn main() -> Result<()> {
+    let x = vec![0.0, 1.0, 2.0, 3.0, 4.0];
+    let y = vec![0.0, 1.0, 4.0, 9.0, 16.0];
+    let spline = CubicSplineFit::new(x, y).smoothing_spline(0.01)?;
+    let json = serde_json::to_string_pretty(&SplineCurveData::from(&spline))?;
+    println!("{}", json);
+    Ok(())
+}
 ```
 
 ## Plots

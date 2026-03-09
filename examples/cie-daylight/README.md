@@ -19,7 +19,7 @@ if you don't, you can start with a very high estimate, and try successive fits w
 This procedure is implemented with `smoothing_spline_optimize`, following Dierckx' instructions.
 
 When running this program, this function will start with the `rms_start` error start value, and reduce it with successive approximations by multiplying this value with a scale ratio: `rms_scale_ratio`.
-As third parameter a criterium for convergence has to be supplied, in form of a function, typically a Rust closure.
+As third parameter a criterion for convergence has to be supplied, in form of a function, typically a Rust closure.
 Here it is set to stop when the number of knots `k` is larger then 30 as an upper limit, based on an estimate of the spectral resolution in the graph.
 This convergence function is also used to get a view of the number of knots in the fit, and the accuracy of the fit.
 The initial target for `rms-start` is here set to `1.0`, and in each iteration it is reduced by a factor of 0.5.
@@ -41,21 +41,21 @@ The fit results are here printed on the command line, and  plotted in an "fit.pn
 
 ```json
 {
+  "k": 3,
+  "n": 2,
   "t": [
-    381.09, 381.09, 381.09, 381.09, 405.04, 429.15, 441.47, 447.64, 450.53, 
-    453.41, 465.4, 477.42, 489.89, 501.99, 526.71, 551.58, 576.17, 601.33, 
+    381.09, 381.09, 381.09, 381.09, 405.04, 429.15, 441.47, 447.64, 450.53,
+    453.41, 465.4, 477.42, 489.89, 501.99, 526.71, 551.58, 576.17, 601.33,
     626.63, 652.07, 677.21, 728.3, 779.88, 779.88, 779.88, 779.88
   ],
   "c": [
-    0.0022, 0.0022000000000000006, 0.011333202500664304, -0.007280989002300535, 
-    0.3701504089598165, 1.0271690365100785, 0.9338346755132363, 0.5240967440473344, 
-    0.2996392495021921, 0.2209199301647846, 0.5503228933662222, 0.643534450394433, 
+    0.0022, 0.0022000000000000006, 0.011333202500664304, -0.007280989002300535,
+    0.3701504089598165, 1.0271690365100785, 0.9338346755132363, 0.5240967440473344,
+    0.2996392495021921, 0.2209199301647846, 0.5503228933662222, 0.643534450394433,
     0.5184346552047464, 0.6488285856664529, 0.6323493134354996, 0.660478648460517,
-    0.8052787571658832, 0.7380670192932405, 0.38635154293989304, 0.08489388281768777, 
+    0.8052787571658832, 0.7380670192932405, 0.38635154293989304, 0.08489388281768777,
     0.035, 0.035
-  ],
-  "k": 3,
-  "n": 1,
+  ]
 }
 ```
 

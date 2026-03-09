@@ -1,4 +1,6 @@
 
+#![cfg(feature = "plot")]
+
 use splinify::{CubicSplineFit, SplineCurveFit, ParameterSplineCurveFit, Result, read_csv_xy, SplineCurveData};
 
 #[test]

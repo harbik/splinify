@@ -4,14 +4,16 @@ use serde::Serialize;
 use spliny::SplineCurve;
 
 #[derive(Serialize)]
-pub struct SplineCurveData {
-    pub t: Vec<f64>,
-    pub c: Vec<f64>,
+pub struct SplineCurveData<'a> {
+    pub k: usize,
+    pub n: usize,
+    pub t: &'a [f64],
+    pub c: &'a [f64],
 }
 
-impl<const K: usize, const N: usize> From<&SplineCurve<K, N>> for SplineCurveData {
-    fn from(s: &SplineCurve<K, N>) -> Self {
-        Self { t: s.t.clone(), c: s.c.clone() }
+impl<'a, const K: usize, const N: usize> From<&'a SplineCurve<K, N>> for SplineCurveData<'a> {
+    fn from(s: &'a SplineCurve<K, N>) -> Self {
+        Self { k: K, n: N, t: &s.t, c: &s.c }
     }
 }
 
