@@ -19,7 +19,7 @@ if you don't, you can start with a very high estimate, and try successive fits w
 This procedure is implemented with `smoothing_spline_optimize`, following Dierckx' instructions.
 
 When running this program, this function will start with the `rms_start` error start value, and reduce it with successive approximations by multiplying this value with a scale ratio: `rms_scale_ratio`.
-As third parameter a criterium for convergence has to be supplied, in form of a function, typically a Rust closure.
+As third parameter a criterion for convergence has to be supplied, in form of a function, typically a Rust closure.
 Here it is set to stop when the number of knots `k` is larger then 30 as an upper limit, based on an estimate of the spectral resolution in the graph.
 This convergence function is also used to get a view of the number of knots in the fit, and the accuracy of the fit.
 The initial target for `rms-start` is here set to `1.0`, and in each iteration it is reduced by a factor of 0.5.

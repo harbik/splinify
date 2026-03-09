@@ -1,5 +1,5 @@
 
-use splinify::{CubicSplineFit, SplineCurveFit, ParameterSplineCurveFit, Result, read_csv_xy};
+use splinify::{CubicSplineFit, SplineCurveFit, ParameterSplineCurveFit, Result, read_csv_xy, SplineCurveData};
 
 #[test]
 fn test_smoothing() -> Result<()> {
@@ -10,11 +10,11 @@ fn test_smoothing() -> Result<()> {
     println!("knots {:?}", d.t);
     println!("number of knots: {}", d.t.len());
 
-    let json = serde_json::to_string_pretty(&d)?;
+    let json = serde_json::to_string_pretty(&SplineCurveData::from(&d))?;
     println!("{}", json);
 
+    #[cfg(feature = "plot")]
     d.plot("tests/img/curfit-smooth.png",(1600,800))?;
-
 
     Ok(())
 }
@@ -28,7 +28,9 @@ fn test_cardinal() -> Result<()> {
     let tc = d.cardinal_spline(10.0)?;
     println!("knots {:?}", tc.t);
     println!("number of knots: {}", tc.t.len());
-    tc.plot("fit.png", (1600,800))?;
+
+    #[cfg(feature = "plot")]
+    tc.plot("tests/img/cardinal_fit.png", (1600,800))?;
 
     Ok(())
 }
@@ -42,7 +44,9 @@ fn test_cardinal_1d() -> Result<()> {
     let tc = d.cardinal_spline(10.0)?;
     println!("knots {:?}", tc.t);
     println!("number of knots: {}", tc.t.len());
-    tc.plot("fit.png", (1600,800))?;
+
+    #[cfg(feature = "plot")]
+    tc.plot("tests/img/cardinal_1d_fit.png", (1600,800))?;
 
     Ok(())
 }
@@ -64,8 +68,10 @@ fn test_interpolating_spline() -> Result<()> {
             .begin_constraints([ [xy_data[0], xy_data[1]], [0.0, 0.0], [0.0, 0.0]])?
             .end_constraints([ [xy_data[xy_data.len()-2],xy_data[xy_data.len()-1]],  [0.0, 0.0], [0.0, 0.0] ])?
             .interpolating_spline()?;
-    
-    int_spline.plot_with_control_points_and_data("fit.png", (2000,1000), &xy)?;
+
+    #[cfg(feature = "plot")]
+    int_spline.plot_with_control_points_and_data("tests/img/interpolating_spline_fit.png", (2000,1000), &xy)?;
+
     Ok(())
 }
 
@@ -83,11 +89,12 @@ fn constrained_cardinal_spline() -> Result<()> {
        .begin_constraints([[y[0]],[0.0], [0.0]])?
        .end_constraints([[y[y.len()-1]], [0.0], [0.0]])?
        .cardinal_spline(10.0)?;
-     
+
     println!("knots {:?}", tc.t);
     println!("number of knots: {}", tc.t.len());
 
-    tc.plot("fit.png", (2000,1000))?;
+    #[cfg(feature = "plot")]
+    tc.plot("tests/img/constrained_cardinal_spline_fit.png", (2000,1000))?;
 
     Ok(())
 }

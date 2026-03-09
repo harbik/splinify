@@ -1,5 +1,21 @@
-use super::{Result, };
+use super::Result;
 use csv::ReaderBuilder;
+use serde::Serialize;
+use spliny::SplineCurve;
+
+#[derive(Serialize)]
+pub struct SplineCurveData<'a> {
+    pub k: usize,
+    pub n: usize,
+    pub t: &'a [f64],
+    pub c: &'a [f64],
+}
+
+impl<'a, const K: usize, const N: usize> From<&'a SplineCurve<K, N>> for SplineCurveData<'a> {
+    fn from(s: &'a SplineCurve<K, N>) -> Self {
+        Self { k: K, n: N, t: &s.t, c: &s.c }
+    }
+}
 
 pub fn read_csv_xy(csv_file: &str) -> Result<(Vec<f64>, Vec<f64>)> {
     let mut rdr = csv::Reader::from_path(csv_file)?;
