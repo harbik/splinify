@@ -1,5 +1,19 @@
 use super::{Result, };
 use csv::ReaderBuilder;
+use serde::Serialize;
+use spliny::SplineCurve;
+
+#[derive(Serialize)]
+pub struct SplineCurveData {
+    pub t: Vec<f64>,
+    pub c: Vec<f64>,
+}
+
+impl<const K: usize, const N: usize> From<&SplineCurve<K, N>> for SplineCurveData {
+    fn from(s: &SplineCurve<K, N>) -> Self {
+        Self { t: s.t.clone(), c: s.c.clone() }
+    }
+}
 
 pub fn read_csv_xy(csv_file: &str) -> Result<(Vec<f64>, Vec<f64>)> {
     let mut rdr = csv::Reader::from_path(csv_file)?;

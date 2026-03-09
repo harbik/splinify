@@ -1,5 +1,5 @@
 
-use splinify::{ParameterSplineCurveFit, Result, read_csv_uxy};
+use splinify::{ParameterSplineCurveFit, Result, read_csv_uxy, SplineCurveData};
 
 fn main() -> Result<()> {
 
@@ -12,9 +12,9 @@ fn main() -> Result<()> {
     let d = 
         ParameterSplineCurveFit::<3,2>
             ::new(u.clone(), xy.clone())?
-            .smoothing_spline(1E-5)?;
+            .smoothing_spline(5E-4)?;
 
-    let json = serde_json::to_string_pretty(&d)?;
+    let json = serde_json::to_string_pretty(&SplineCurveData::from(&d))?;
     println!("{}", json);
 
     d.plot("fit.png", (2000,1000))?;

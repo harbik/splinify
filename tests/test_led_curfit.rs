@@ -1,5 +1,5 @@
 
-use splinify::{CubicSplineFit, SplineCurveFit, ParameterSplineCurveFit, Result, read_csv_xy};
+use splinify::{CubicSplineFit, SplineCurveFit, ParameterSplineCurveFit, Result, read_csv_xy, SplineCurveData};
 
 #[test]
 fn test_smoothing() -> Result<()> {
@@ -10,7 +10,7 @@ fn test_smoothing() -> Result<()> {
     println!("knots {:?}", d.t);
     println!("number of knots: {}", d.t.len());
 
-    let json = serde_json::to_string_pretty(&d)?;
+    let json = serde_json::to_string_pretty(&SplineCurveData::from(&d))?;
     println!("{}", json);
 
     d.plot("tests/img/curfit-smooth.png",(1600,800))?;

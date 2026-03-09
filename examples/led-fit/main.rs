@@ -1,6 +1,6 @@
 #![doc = include_str!("README.md")]
 
-use splinify::{CubicSplineFit2D, Result, read_csv_xy};
+use splinify::{CubicSplineFit2D, Result, read_csv_xy, SplineCurveData};
 
 fn main()-> Result<()> {
 
@@ -16,7 +16,7 @@ fn main()-> Result<()> {
             .smoothing_spline_optimize(0.1, 0.5,  |k,_,rms,_| {println!("{}/{:.4}", k, rms); k>50}, None)?;
 
     // output spline fit results 
-    println!("{}", serde_json::to_string_pretty(&d)?);
+    println!("{}", serde_json::to_string_pretty(&SplineCurveData::from(&d))?);
 
     d.plot_with_control_points_and_data("fit.png", (2000,1000), &xy)?;
 

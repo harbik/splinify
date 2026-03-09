@@ -1,7 +1,7 @@
 
 #![doc = include_str!("README.md")]
 
-use splinify::{CubicSplineFit2D, Result};
+use splinify::{CubicSplineFit2D, Result, SplineCurveData};
 
 fn lissajous(t:f64, a: f64, kx: f64, b: f64, ky: f64) -> [f64;2] {
     [
@@ -24,7 +24,7 @@ fn main() -> Result<()> {
     let s = CubicSplineFit2D::new(u, xy)?.smoothing_spline(5e-3)?;
 
     // Output fit results as JSON file and plot
-    println!("{}", serde_json::to_string_pretty(&s)?);
+    println!("{}", serde_json::to_string_pretty(&SplineCurveData::from(&s))?);
     s.plot_with_control_points("lissajous.png", (800,800))?;
 
     Ok(())

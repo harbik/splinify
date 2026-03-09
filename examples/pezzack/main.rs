@@ -1,5 +1,5 @@
 
-use splinify::{ParameterSplineCurveFit, Result, read_csv_xy};
+use splinify::{ParameterSplineCurveFit, Result, read_csv_xy, SplineCurveData};
 
 
 
@@ -15,7 +15,7 @@ fn main() -> Result<()> {
        // .end_constraints([ [y[y.len()-1]] ])?
         .smoothing_spline_optimize(0.1, 0.8,  |k,_,_,_| k>40, None)?;
 
-    let json = serde_json::to_string_pretty(&d)?;
+    let json = serde_json::to_string_pretty(&SplineCurveData::from(&d))?;
     println!("{}", json);
 
     d.plot_with_control_points_and_data("fit.png", (1500,1000), &xy)?;
