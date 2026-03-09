@@ -10,9 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - `serde_json` serialization of `SplineCurve` in tests and examples now correctly wraps the result in `SplineCurveData`.
-- README code examples marked `no_run` so they are not executed as doc tests (they require external CSV files).
+- `SplineCurveData` now includes `k` (degree) and `n` (dimension) fields in its serialized output.
+- `SplineCurveData` borrows `t` and `c` slices instead of cloning, avoiding unnecessary allocation.
+- README code examples changed from `rust,ignore` to `rust,no_run` where possible; plot-dependent lines commented out so examples compile without the `plot` feature.
+- Integration tests now run without the `plot` feature; plot calls are individually gated with `#[cfg(feature = "plot")]`.
 - Corrected type name in LED spectral data README example (`SplineCurveFit::<3>` → `CubicSplineFit`).
 - Fixed `repository` URL in `Cargo.toml` (was pointing to `dierckx-sys`, now points to `splinify`).
+- Fixed trailing comma in `use super::Result;` import in `src/util.rs`.
 
 ## [0.2.0] - 2025-12-14
 

@@ -72,7 +72,7 @@ splinify = { version = "0.2", features = ["plot"] }
 
 ### Lissajous curve (2D parametric spline)
 
-```rust,ignore
+```rust,no_run
 use splinify::{CubicSplineFit2D, Result, SplineCurveData};
 
 fn lissajous(t: f64, a: f64, kx: f64, b: f64, ky: f64) -> [f64; 2] {
@@ -89,8 +89,8 @@ fn main() -> Result<()> {
     // Output as JSON
     println!("{}", serde_json::to_string_pretty(&SplineCurveData::from(&s))?);
 
-    // Plot (requires the `plot` feature)
-    s.plot_with_control_points("lissajous.png", (800, 800))?;
+    // Plot — requires the `plot` feature: splinify = { features = ["plot"] }
+    // s.plot_with_control_points("lissajous.png", (800, 800))?;
     Ok(())
 }
 ```

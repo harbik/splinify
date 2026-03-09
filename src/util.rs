@@ -1,4 +1,4 @@
-use super::{Result, };
+use super::Result;
 use csv::ReaderBuilder;
 use serde::Serialize;
 use spliny::SplineCurve;
