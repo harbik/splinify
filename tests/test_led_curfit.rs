@@ -30,7 +30,7 @@ fn test_cardinal() -> Result<()> {
     println!("number of knots: {}", tc.t.len());
 
     #[cfg(feature = "plot")]
-    tc.plot("fit.png", (1600,800))?;
+    tc.plot("tests/img/cardinal_fit.png", (1600,800))?;
 
     Ok(())
 }
@@ -46,7 +46,7 @@ fn test_cardinal_1d() -> Result<()> {
     println!("number of knots: {}", tc.t.len());
 
     #[cfg(feature = "plot")]
-    tc.plot("fit.png", (1600,800))?;
+    tc.plot("tests/img/cardinal_1d_fit.png", (1600,800))?;
 
     Ok(())
 }
@@ -70,7 +70,7 @@ fn test_interpolating_spline() -> Result<()> {
             .interpolating_spline()?;
 
     #[cfg(feature = "plot")]
-    int_spline.plot_with_control_points_and_data("fit.png", (2000,1000), &xy)?;
+    int_spline.plot_with_control_points_and_data("tests/img/interpolating_spline_fit.png", (2000,1000), &xy)?;
 
     Ok(())
 }
@@ -94,7 +94,7 @@ fn constrained_cardinal_spline() -> Result<()> {
     println!("number of knots: {}", tc.t.len());
 
     #[cfg(feature = "plot")]
-    tc.plot("fit.png", (2000,1000))?;
+    tc.plot("tests/img/constrained_cardinal_spline_fit.png", (2000,1000))?;
 
     Ok(())
 }
