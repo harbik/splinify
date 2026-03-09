@@ -13,8 +13,8 @@ fn lissajous(t:f64, a: f64, kx: f64, b: f64, ky: f64) -> [f64;2] {
 fn main() -> Result<()> {
 
 
-    // set path to directory of example script, used for saving plot
-    std::env::set_current_dir(std::path::Path::new(file!()).parent().unwrap())?;   
+    let example_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join(std::path::Path::new(file!()).parent().unwrap());
 
     // Generate Lissajous data points, with angle parameter ranging from 0 to 180º, with 1º-steps.
     let u: Vec<f64> = (0..=180u32).into_iter().map(|v|(v as f64).to_radians()).collect();
@@ -25,7 +25,8 @@ fn main() -> Result<()> {
 
     // Output fit results as JSON file and plot
     println!("{}", serde_json::to_string_pretty(&SplineCurveData::from(&s))?);
-    s.plot_with_control_points("lissajous.png", (800,800))?;
+    let plot_path = example_dir.join("lissajous.png");
+    s.plot_with_control_points(plot_path.to_str().expect("non-UTF-8 path"), (800,800))?;
 
     Ok(())
 }

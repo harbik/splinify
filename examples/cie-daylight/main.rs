@@ -4,7 +4,8 @@ use splinify::{Result, ParameterSplineCurveFit, SplineCurveData};
 
 fn main()-> Result<()> {
 
-    std::env::set_current_dir(std::path::Path::new(file!()).parent().unwrap())?;   
+    let example_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join(std::path::Path::new(file!()).parent().unwrap());
 
     let x = vec![ 300.0, 305.0, 310.0, 315.0, 320.0, 325.0, 330.0, 335.0, 340.0, 345.0, 350.0, 355.0, 360.0, 365.0,
         370.0, 375.0, 380.0, 385.0, 390.0, 395.0, 400.0, 405.0, 410.0, 415.0, 420.0, 425.0, 430.0, 435.0, 440.0, 445.0,
@@ -31,7 +32,8 @@ fn main()-> Result<()> {
             .interpolating_spline()?;
     
     println!("{}", serde_json::to_string_pretty(&SplineCurveData::from(&int_spline))?);
-    int_spline.plot_with_control_points_and_data("fit.png", (2000,1000), &xy)?;
+    let plot_path = example_dir.join("fit.png");
+    int_spline.plot_with_control_points_and_data(plot_path.to_str().expect("non-UTF-8 path"), (2000,1000), &xy)?;
 
     // output spline fit results 
 
