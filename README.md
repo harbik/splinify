@@ -43,7 +43,7 @@ Having to install a Fortran compiler is a big restriction, so I recommend not us
 
 Splinify is part of a family of three crates:
 
-- **splinify** fits (non-uniform) [B-Spline](b-splines) curves to input data,
+- **splinify** fits (non-uniform) [B-Spline](#b-splines) curves to input data,
 and results in a `spliny`-crate `SplineCurve`.
 Data inputs are `x` and `y` vectors for 1 dimensional curves,
 and `u` and `xyn` vectors in case of N-dimensional curves.

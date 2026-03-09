@@ -12,7 +12,7 @@ The data is formatted as a 2D parametric curve: each sample is an *(x, y)* pair 
 of the wavelength and the corresponding S0 spectral value, with wavelength used as the curve
 parameter *u*.
 
-Boundary constraints are set so that the first and second derivatives at both endpoints
+Boundary constraints can be set so that the first and second derivatives at both endpoints
 are zero, producing a smooth, physically realistic fit at the spectral limits.
 
 ```text
