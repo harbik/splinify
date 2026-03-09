@@ -120,8 +120,8 @@ fn main() -> Result<()> {
     let xy: Vec<f64> = x.iter().zip(y.iter()).flat_map(|(&x, &y)| [x, y]).collect();
 
     let s = ParameterSplineCurveFit::<5, 2>::new(x.clone(), xy)?
-        .begin_constraints([[y[0], 0.0], [0.0, 0.0], [0.0, 0.0]])?
-        .end_constraints([[*y.last().unwrap(), 0.0], [0.0, 0.0], [0.0, 0.0]])?
+        .begin_constraints([[x[0], y[0]], [0.0, 0.0], [0.0, 0.0]])?
+        .end_constraints([[*x.last().unwrap(), *y.last().unwrap()], [0.0, 0.0], [0.0, 0.0]])?
         .smoothing_spline(0.01)?;
     Ok(())
 }
