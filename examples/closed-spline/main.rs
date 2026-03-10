@@ -1,11 +1,12 @@
-use splinify::{ClosedCubicSplineFit2D, Result};
+use splinify::{ClosedCubicSplineFit2D, Result, SplineCurveData};
 
 fn ellipse(t: f64, a: f64, b: f64) -> [f64; 2] {
     [a * t.cos(), b * t.sin()]
 }
 
 fn main() -> Result<()> {
-    std::env::set_current_dir(std::path::Path::new(file!()).parent().unwrap())?;
+    let example_dir = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join(std::path::Path::new(file!()).parent().unwrap());
 
     let n_points = 1000;
     let mut u: Vec<f64> = (0..n_points).map(|i| i as f64 / n_points as f64).collect();
@@ -20,10 +21,11 @@ fn main() -> Result<()> {
 
     let d = ClosedCubicSplineFit2D::new(u, xy)?.smoothing_spline(1E-6)?;
 
-    let json = serde_json::to_string_pretty(&d)?;
+    let json = serde_json::to_string_pretty(&SplineCurveData::from(&d))?;
     println!("{}", json);
 
-    d.plot("fit.png", (2000, 1000))?;
+    let plot_path = example_dir.join("fit.png");
+    d.plot(plot_path.to_str().expect("non-UTF-8 path"), (2000, 1000))?;
 
     Ok(())
 }

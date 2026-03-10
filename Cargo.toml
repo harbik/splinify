@@ -1,6 +1,6 @@
 [package]
 name = "splinify"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 description = "Rust-wrapper for Dierckx' B-Splines Curve and Surface Fortran Library"
 authors = ["Gerard Harbers", "Harbers Bik LLC"]
@@ -42,4 +42,8 @@ required-features = ["plot"]
 
 [[example]]
 name = "lissajous"
+required-features = ["plot"]
+
+[[example]]
+name = "closed-spline"
 required-features = ["plot"]
